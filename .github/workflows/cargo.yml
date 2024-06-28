@@ -1,0 +1,58 @@
+on:
+    push:
+      branches:
+      - master
+      - main
+      paths:
+        - 'RayTracer/src/**'
+    pull_request:
+      branches:
+      - master 
+      - main
+      paths:
+        - 'RayTracer/src/**'
+      
+name: CI
+  
+jobs:
+    lint:
+      name: Lint and Test
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+          name: Checkout 🛎️
+        - uses: actions-rs/toolchain@v1
+          name: Setup Cargo Toolchain 🛎️
+          with:
+            components: rustfmt, clippy
+            toolchain: stable
+        - run: cargo test --all-features
+          name: Running Tests 🚀
+          working-directory: ./RayTracer
+        - run: cargo fmt -- --check
+          name: Check Code Format 🔧
+          working-directory: ./RayTracer
+        - run: cargo clippy --all-targets --all-features -- -D warnings
+          name: Lint with Clippy 🔧
+          working-directory: ./RayTracer
+    build:
+      name: Build and Upload
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+          name: Checkout 🛎️
+        - uses: actions-rs/toolchain@v1
+          name: Setup Cargo Toolchain 🛎️
+          with:
+            toolchain: stable
+        - run: cargo build --release --all-features
+          name: Build 🔧
+          working-directory: ./RayTracer
+        - run: cargo run --release
+          name: Run 🔧
+          working-directory: ./RayTracer
+        - uses: actions/upload-artifact@v2
+          name: Upload Artifacts 🚀
+          with:
+            name: output
+            path: ./RayTracer/output/
