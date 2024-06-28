@@ -59,8 +59,13 @@ impl Rasterizer {
     }
 
     fn set_pixel(&mut self, point: &Vector3<f64>, color: &Vector3<f64>) {
-        let ind = (self.height as f64 - 1.0 - point.y) * self.width as f64 + point.x;
-        self.frame_buf[ind as usize] = *color;
+        let ind = self.get_index(point.x as usize, point.y as usize);
+        if (point.z < self.depth_buf[ind as usize]) {
+            self.frame_buf[ind as usize] = *color;
+            self.depth_buf[ind as usize] = point.z;
+        } else {
+            return;
+        }
     }
 
     pub fn clear(&mut self, buff: Buffer) {
@@ -158,7 +163,19 @@ impl Rasterizer {
 
     pub fn rasterize_triangle(&mut self, t: &Triangle) {
         /*  implement your code here  */
-        
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let x : f64 = x as f64;
+                let y : f64 = y as f64;
+                //convert 4d vector into 3d vector
+                let vec3 = [Vector3::new(t.v[0].x, t.v[0].y, t.v[0].z),
+                         Vector3::new(t.v[1].x, t.v[1].y, t.v[1].z),
+                         Vector3::new(t.v[2].x, t.v[2].y, t.v[2].z)];
+                if (inside_triangle(x + 0.5 as f64, y + 0.5 as f64, &vec3)) {
+                    self.set_pixel(&Vector3::new(x as f64, y as f64, 0.0), &t.get_color());
+                }
+            }
+        }
     }
 
     pub fn frame_buffer(&self) -> &Vec<Vector3<f64>> {
@@ -172,7 +189,19 @@ fn to_vec4(v3: Vector3<f64>, w: Option<f64>) -> Vector4<f64> {
 
 fn inside_triangle(x: f64, y: f64, v: &[Vector3<f64>; 3]) -> bool {
     /*  implement your code here  */
-
+    //calculate the cross product
+    let v0 = v[0];
+    let v1 = v[1];
+    let v2 = v[2];
+    let c0 = (v1.x - v0.x) * (y - v0.y) - (v1.y - v0.y) * (x - v0.x);
+    let c1 = (v2.x - v1.x) * (y - v1.y) - (v2.y - v1.y) * (x - v1.x);
+    let c2 = (v0.x - v2.x) * (y - v2.y) - (v0.y - v2.y) * (x - v2.x);
+    if c0 >= 0.0 && c1 >= 0.0 && c2 >= 0.0 {
+        return true
+    }
+    if c0 <= 0.0 && c1 <= 0.0 && c2 <= 0.0 {
+        return true
+    }
     false
 }
 

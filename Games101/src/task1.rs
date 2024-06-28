@@ -18,9 +18,9 @@ pub fn t1()-> Result<()>{
     let mut angle = 0.0;
     let mut r = Rasterizer::new(700, 700);
     let eye_pos = Vector3::new(0.0, 0.0, 5.0);
-    let pos = vec![Vector3::new(2.0, 0.0, -2.0),
-                   Vector3::new(0.0, 2.0, -2.0),
-                   Vector3::new(-2.0, 0.0, -2.0)];
+    let pos = vec![Vector3::new(0.5, 0.0, -0.5),
+                   Vector3::new(0.0, 0.5, -0.5),
+                   Vector3::new(-0.5, 0.0, -0.5)];
     let ind = vec![Vector3::new(0, 1, 2)];
 
     let pos_id = r.load_position(&pos);
@@ -34,6 +34,8 @@ pub fn t1()-> Result<()>{
         r.set_model(get_model_matrix(angle,1.0));
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45.0, 1.0, 0.1, 50.0));
+        r.set_rotation(get_rotation_matrix(Vector3::new(1.0, 1.0, 1.0), angle));
+
         r.draw_triangle(pos_id, ind_id, Primitive::Triangle);
 
         let frame_buffer = r.frame_buffer();

@@ -1,5 +1,6 @@
 #![allow(warnings)]
 use std::os::raw::c_void;
+use std::ops::AddAssign;
 use nalgebra::{Matrix3, Matrix4, Vector3, Vector4};
 use opencv::core::{Mat, MatTraitConst};
 use opencv::imgproc::{COLOR_RGB2BGR, cvt_color};
@@ -9,6 +10,28 @@ use crate::triangle::Triangle;
 
 pub type V3f = Vector3<f64>;
 pub type M4f = Matrix4<f64>;
+
+pub(crate) fn get_rotation_matrix(axis: V3f, angle: f64) -> M4f{
+    // normalize the axis
+    let mut axis = axis.normalize();
+    let mut rotation: Matrix4<f64> = Matrix4::identity();
+    let mut part1: Matrix3<f64> = Matrix3::identity();
+    let mut part2: Matrix3<f64> = Matrix3::identity();
+    let mut part3: Matrix3<f64> = Matrix3::identity();
+    let rad = angle.to_radians();
+    let cos = rad.cos();
+    let sin = rad.sin();
+    part1 *= cos;
+    part2 = (1.0 - cos) * axis * axis.transpose();
+    part3 = Matrix3::new(0.0, -axis[2], axis[1],
+                         axis[2], 0.0, -axis[0],
+                         -axis[1], axis[0], 0.0);
+    part3 *= sin;
+    rotation.fixed_slice_mut::<3, 3>(0, 0).copy_from(&part1);
+    rotation.fixed_slice_mut::<3, 3>(0, 0).add_assign(&part2);
+    rotation.fixed_slice_mut::<3, 3>(0, 0).add_assign(&part3);
+    rotation
+}
 
 pub(crate) fn get_view_matrix(eye_pos: V3f) -> M4f {
     let mut view: Matrix4<f64> = Matrix4::identity();
@@ -28,7 +51,7 @@ pub(crate) fn get_model_matrix(rotation_angle: f64,scale: f64) -> M4f {
     model[(0, 1)] = -rad.sin();
     model[(1, 0)] = rad.sin();
     model[(1, 1)] = rad.cos();
-
+    
     model
 }
 
