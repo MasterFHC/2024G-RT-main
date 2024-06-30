@@ -1,0 +1,98 @@
+Current time before rasterizing : Instant { tv_sec: 47473, tv_nsec: 365685935 }
+Current time after rasterizing : Instant { tv_sec: 47473, tv_nsec: 684737415 }
+Current time before rasterizing : Instant { tv_sec: 47473, tv_nsec: 684804471 }
+Current time after rasterizing : Instant { tv_sec: 47473, tv_nsec: 995269117 }
+Current time before rasterizing : Instant { tv_sec: 47473, tv_nsec: 995332222 }
+Current time after rasterizing : Instant { tv_sec: 47474, tv_nsec: 321538091 }
+frame count: 0
+Current time before rasterizing : Instant { tv_sec: 47476, tv_nsec: 531723835 }
+Current time after rasterizing : Instant { tv_sec: 47476, tv_nsec: 868632211 }
+Current time before rasterizing : Instant { tv_sec: 47476, tv_nsec: 868692953 }
+Current time after rasterizing : Instant { tv_sec: 47477, tv_nsec: 194128882 }
+Current time before rasterizing : Instant { tv_sec: 47477, tv_nsec: 194183901 }
+Current time after rasterizing : Instant { tv_sec: 47477, tv_nsec: 526818730 }
+frame count: 1
+Current time before rasterizing : Instant { tv_sec: 47479, tv_nsec: 621999300 }
+Current time after rasterizing : Instant { tv_sec: 47479, tv_nsec: 977973189 }
+Current time before rasterizing : Instant { tv_sec: 47479, tv_nsec: 978083561 }
+Current time after rasterizing : Instant { tv_sec: 47480, tv_nsec: 374109335 }
+Current time before rasterizing : Instant { tv_sec: 47480, tv_nsec: 374201658 }
+Current time after rasterizing : Instant { tv_sec: 47480, tv_nsec: 730622088 }
+frame count: 2
+Current time before rasterizing : Instant { tv_sec: 47482, tv_nsec: 852833105 }
+Current time after rasterizing : Instant { tv_sec: 47483, tv_nsec: 205242095 }
+Current time before rasterizing : Instant { tv_sec: 47483, tv_nsec: 205307766 }
+Current time after rasterizing : Instant { tv_sec: 47483, tv_nsec: 544023322 }
+Current time before rasterizing : Instant { tv_sec: 47483, tv_nsec: 544079267 }
+Current time after rasterizing : Instant { tv_sec: 47483, tv_nsec: 893829186 }
+frame count: 3
+Current time before rasterizing : Instant { tv_sec: 47485, tv_nsec: 981941044 }
+Current time after rasterizing : Instant { tv_sec: 47486, tv_nsec: 315541039 }
+Current time before rasterizing : Instant { tv_sec: 47486, tv_nsec: 315601065 }
+Current time after rasterizing : Instant { tv_sec: 47486, tv_nsec: 636566581 }
+Current time before rasterizing : Instant { tv_sec: 47486, tv_nsec: 636626865 }
+Current time after rasterizing : Instant { tv_sec: 47486, tv_nsec: 978708217 }
+frame count: 4
+Current time before rasterizing : Instant { tv_sec: 47489, tv_nsec: 86355515 }
+Current time after rasterizing : Instant { tv_sec: 47489, tv_nsec: 408597673 }
+Current time before rasterizing : Instant { tv_sec: 47489, tv_nsec: 408688969 }
+Current time after rasterizing : Instant { tv_sec: 47489, tv_nsec: 728524997 }
+Current time before rasterizing : Instant { tv_sec: 47489, tv_nsec: 728591858 }
+Current time after rasterizing : Instant { tv_sec: 47490, tv_nsec: 66070132 }
+frame count: 5
+Current time before rasterizing : Instant { tv_sec: 47492, tv_nsec: 160197850 }
+Current time after rasterizing : Instant { tv_sec: 47492, tv_nsec: 498170785 }
+Current time before rasterizing : Instant { tv_sec: 47492, tv_nsec: 498213993 }
+Current time after rasterizing : Instant { tv_sec: 47492, tv_nsec: 815236347 }
+Current time before rasterizing : Instant { tv_sec: 47492, tv_nsec: 815297673 }
+Current time after rasterizing : Instant { tv_sec: 47493, tv_nsec: 148781644 }
+frame count: 6
+Current time before rasterizing : Instant { tv_sec: 47495, tv_nsec: 228348861 }
+Current time after rasterizing : Instant { tv_sec: 47495, tv_nsec: 560231738 }
+Current time before rasterizing : Instant { tv_sec: 47495, tv_nsec: 560305740 }
+Current time after rasterizing : Instant { tv_sec: 47495, tv_nsec: 887850516 }
+Current time before rasterizing : Instant { tv_sec: 47495, tv_nsec: 887902775 }
+Current time after rasterizing : Instant { tv_sec: 47496, tv_nsec: 233080180 }
+frame count: 7
+Current time before rasterizing : Instant { tv_sec: 47498, tv_nsec: 325434834 }
+Current time after rasterizing : Instant { tv_sec: 47498, tv_nsec: 662709324 }
+Current time before rasterizing : Instant { tv_sec: 47498, tv_nsec: 662763839 }
+Current time after rasterizing : Instant { tv_sec: 47498, tv_nsec: 988128055 }
+Current time before rasterizing : Instant { tv_sec: 47498, tv_nsec: 988186578 }
+Current time after rasterizing : Instant { tv_sec: 47499, tv_nsec: 327117715 }
+frame count: 8
+Current time before rasterizing : Instant { tv_sec: 47501, tv_nsec: 428719290 }
+Current time after rasterizing : Instant { tv_sec: 47501, tv_nsec: 769724659 }
+Current time before rasterizing : Instant { tv_sec: 47501, tv_nsec: 769812053 }
+Current time after rasterizing : Instant { tv_sec: 47502, tv_nsec: 91263380 }
+Current time before rasterizing : Instant { tv_sec: 47502, tv_nsec: 91321607 }
+Current time after rasterizing : Instant { tv_sec: 47502, tv_nsec: 434957017 }
+frame count: 9
+Current time before rasterizing : Instant { tv_sec: 47504, tv_nsec: 529836389 }
+Current time after rasterizing : Instant { tv_sec: 47504, tv_nsec: 874549539 }
+Current time before rasterizing : Instant { tv_sec: 47504, tv_nsec: 874595774 }
+Current time after rasterizing : Instant { tv_sec: 47505, tv_nsec: 209939676 }
+Current time before rasterizing : Instant { tv_sec: 47505, tv_nsec: 210010334 }
+Current time after rasterizing : Instant { tv_sec: 47505, tv_nsec: 539884895 }
+frame count: 10
+Current time before rasterizing : Instant { tv_sec: 47507, tv_nsec: 639666289 }
+Current time after rasterizing : Instant { tv_sec: 47507, tv_nsec: 985329996 }
+Current time before rasterizing : Instant { tv_sec: 47507, tv_nsec: 985385697 }
+Current time after rasterizing : Instant { tv_sec: 47508, tv_nsec: 302361657 }
+Current time before rasterizing : Instant { tv_sec: 47508, tv_nsec: 302418375 }
+Current time after rasterizing : Instant { tv_sec: 47508, tv_nsec: 626864861 }
+frame count: 11
+Current time before rasterizing : Instant { tv_sec: 47510, tv_nsec: 712201580 }
+Current time after rasterizing : Instant { tv_sec: 47511, tv_nsec: 52105121 }
+Current time before rasterizing : Instant { tv_sec: 47511, tv_nsec: 52180094 }
+Current time after rasterizing : Instant { tv_sec: 47511, tv_nsec: 373849473 }
+Current time before rasterizing : Instant { tv_sec: 47511, tv_nsec: 373926971 }
+Current time after rasterizing : Instant { tv_sec: 47511, tv_nsec: 716342978 }
+frame count: 12
+Current time before rasterizing : Instant { tv_sec: 47513, tv_nsec: 810930339 }
+Current time after rasterizing : Instant { tv_sec: 47514, tv_nsec: 138190636 }
+Current time before rasterizing : Instant { tv_sec: 47514, tv_nsec: 138259834 }
+Current time after rasterizing : Instant { tv_sec: 47514, tv_nsec: 466849165 }
+Current time before rasterizing : Instant { tv_sec: 47514, tv_nsec: 466927115 }
+Current time after rasterizing : Instant { tv_sec: 47514, tv_nsec: 813484299 }
+frame count: 13
