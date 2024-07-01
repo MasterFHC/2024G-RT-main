@@ -51,7 +51,7 @@ pub fn t2() -> Result<()>{
         let image = frame_buffer2cv_mat(frame_buffer);
 
         imshow("image", &image)?;
-        k = wait_key(2000).unwrap();
+        k = wait_key(10).unwrap();
         println!("frame count: {}", frame_count);
         frame_count += 1;
     }

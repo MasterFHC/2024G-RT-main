@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use nalgebra::{Matrix4, Vector3, Vector4};
 use std::cmp::min;
 use crate::triangle::Triangle;
-
+use lerp::Lerp;
+use rand::Rng;
 #[allow(dead_code)]
 pub enum Buffer {
     Color,
@@ -25,12 +26,17 @@ pub struct Rasterizer {
     pos_buf: HashMap<usize, Vec<Vector3<f64>>>,
     ind_buf: HashMap<usize, Vec<Vector3<usize>>>,
     col_buf: HashMap<usize, Vec<Vector3<f64>>>,
-
+    
     frame_buf: Vec<Vector3<f64>>,
     depth_buf: Vec<f64>,
-    /*  You may need to uncomment here to implement the MSAA method  */
+    /* MSAA method */
     frame_sample: Vec<Vector3<f64>>,
     depth_sample: Vec<f64>,
+
+    /* TAA method */
+    frame_history: Vec<Vector3<f64>>,
+    virginity : bool,
+
     width: u64,
     height: u64,
     next_id: usize,
@@ -50,10 +56,12 @@ impl Rasterizer {
     pub fn new(w: u64, h: u64) -> Self {
         let mut r = Rasterizer::default();
         // in every block, we uniformly sample MSAA * MSAA points
-        r.MSAA = 5;
+        r.MSAA = 2;
+        r.virginity = true; // TAA's first frame
         r.width = w;
         r.height = h;
         r.frame_buf.resize((w * h) as usize, Vector3::zeros());
+        r.frame_history.resize((w * h) as usize, Vector3::zeros());
         r.depth_buf.resize((w * h) as usize, 0.0);
         r.frame_sample.resize((w * h * r.MSAA * r.MSAA) as usize, Vector3::zeros());
         r.depth_sample.resize((w * h * r.MSAA * r.MSAA) as usize, 0.0);
@@ -69,7 +77,18 @@ impl Rasterizer {
         self.frame_buf[ind as usize] = *color;
         self.depth_buf[ind as usize] = point.z;
     }
-
+    fn set_pixel_TAA(&mut self, point: &Vector3<f64>, color: &Vector3<f64>) {
+        let ind = self.get_index(point.x as usize, point.y as usize);
+        //lerp the color for TAA
+        self.frame_buf[ind as usize] = (self.frame_history[ind as usize]).lerp(*color, 0.2);
+        self.depth_buf[ind as usize] = point.z;
+    }
+    fn get_virginity(&self) -> bool {
+        self.virginity
+    }
+    fn set_virginity(&mut self, v: bool) {
+        self.virginity = v;
+    }
     pub fn clear(&mut self, buff: Buffer) {
         match buff {
             Buffer::Color => {
@@ -163,11 +182,39 @@ impl Rasterizer {
             t.set_color(1, col_y[0], col_y[1], col_y[2]);
             t.set_color(2, col_z[0], col_z[1], col_z[2]);
 
-            self.rasterize_triangle(&t);
+            // self.rasterize_triangle(&t);
+            // self.rasterize_triangle_MSAA(&t);
+
+            self.rasterize_triangle_TAA(&t);
+        }
+        if(self.get_virginity() == true){
+            self.set_virginity(false);
         }
     }
 
     pub fn rasterize_triangle(&mut self, t: &Triangle) {
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let x : f64 = x as f64;
+                let y : f64 = y as f64;
+                //convert 4d vector into 3d vector
+                let vec3 = [Vector3::new(t.v[0].x, t.v[0].y, t.v[0].z),
+                         Vector3::new(t.v[1].x, t.v[1].y, t.v[1].z),
+                         Vector3::new(t.v[2].x, t.v[2].y, t.v[2].z)];
+                let (alpha_org, beta_org, gamma_org) = compute_barycentric2d(x, y, &vec3);
+                let z : f64 = alpha_org * t.v[0].z + beta_org * t.v[1].z + gamma_org * t.v[2].z;
+                if (inside_triangle(x + 0.5 as f64, y + 0.5 as f64, &vec3)) {
+                    let ind : usize = self.get_index(x as usize, y as usize);
+                    if(self.depth_buf[ind] > t.v[0].z) {
+                        self.depth_buf[ind] = t.v[0].z;
+                        // println!("changed depth to {}", t.v[0].z);
+                        self.set_pixel(&Vector3::new(x, y, z), &t.get_color());
+                    }
+                }
+            }
+        }
+    }
+    pub fn rasterize_triangle_MSAA(&mut self, t: &Triangle) {
         //count the time as requested
         println!("Current time before rasterizing : {:?}", std::time::Instant::now());
 
@@ -182,8 +229,10 @@ impl Rasterizer {
                 let org_ind : usize = self.get_index(x as usize, y as usize);
                 //convert 4d vector into 3d vector
                 let vec3 = [Vector3::new(t.v[0].x, t.v[0].y, t.v[0].z),
-                         Vector3::new(t.v[1].x, t.v[1].y, t.v[1].z),
-                         Vector3::new(t.v[2].x, t.v[2].y, t.v[2].z)];
+                Vector3::new(t.v[1].x, t.v[1].y, t.v[1].z),
+                Vector3::new(t.v[2].x, t.v[2].y, t.v[2].z)];
+                let (alpha_org, beta_org, gamma_org) = compute_barycentric2d(x, y, &vec3);
+                let z : f64 = alpha_org * t.v[0].z + beta_org * t.v[1].z + gamma_org * t.v[2].z;
                 let mut dx : f64 = interval / 2.0;
                 let mut ind_offset : usize = 0;
                 for i in 0..sample_num {
@@ -191,10 +240,10 @@ impl Rasterizer {
                     for j in 0..sample_num {
                         let nowx: f64 = x + dx;
                         let nowy: f64 = y + dy;
+                        let (alpha, beta, gamma) = compute_barycentric2d(nowx, nowy, &vec3);
+                        let real_z = alpha * t.v[0].z + beta * t.v[1].z + gamma * t.v[2].z;
                         let ind : usize = org_ind * sample_num as usize * sample_num as usize + ind_offset;
                         if (inside_triangle(nowx as f64, nowy as f64, &vec3)) {
-                            // let real_z = compute_zvalue(nowx, nowy, &vec3);
-                            let real_z = t.v[0].z;
                             if(real_z < self.depth_sample[ind as usize]){
                                 self.depth_sample[ind as usize] = real_z;
                                 self.depth_buf[org_ind as usize] = real_z.min(self.depth_buf[org_ind as usize]);
@@ -211,13 +260,52 @@ impl Rasterizer {
                     let ind : usize = org_ind * sample_num as usize * sample_num as usize + i as usize;
                     all_color += self.frame_sample[ind as usize];
                 }
-                self.set_pixel(&Vector3::new(x as f64, y as f64, 0.0), &all_color);
+                self.set_pixel(&Vector3::new(x as f64, y as f64, z as f64), &all_color);
             }
         }
 
         //count the time as requested
         println!("Current time after rasterizing : {:?}", std::time::Instant::now());
 
+    }
+    pub fn rasterize_triangle_TAA(&mut self, t: &Triangle) {
+        let mut dx : f64 = 0.0;
+        let mut dy : f64 = 0.0;
+        if(self.get_virginity() == true) {
+            dx = 0.5;
+            dy = 0.5;
+        }
+        else {
+            // generate a random perturbation between [0.0, 1.0] x [0.0, 1.0]
+            let mut rng = rand::thread_rng();
+            dx = rng.gen();
+            dy = rng.gen();
+        }
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let x : f64 = x as f64;
+                let y : f64 = y as f64;
+                //convert 4d vector into 3d vector
+                let vec3 = [Vector3::new(t.v[0].x, t.v[0].y, t.v[0].z),
+                        Vector3::new(t.v[1].x, t.v[1].y, t.v[1].z),
+                        Vector3::new(t.v[2].x, t.v[2].y, t.v[2].z)];
+                let (alpha_org, beta_org, gamma_org) = compute_barycentric2d(x, y, &vec3);
+                let z : f64 = alpha_org * t.v[0].z + beta_org * t.v[1].z + gamma_org * t.v[2].z;
+                let ind : usize = self.get_index(x as usize, y as usize);
+                if (inside_triangle(x + dx as f64, y + dy as f64, &vec3)) {
+                    if(self.depth_buf[ind] > t.v[0].z) {
+                        self.depth_buf[ind] = t.v[0].z;
+                        if(self.get_virginity() == true) {
+                            self.set_pixel(&Vector3::new(x, y, z), &t.get_color());
+                        }
+                        else {
+                            self.set_pixel_TAA(&Vector3::new(x, y, z), &t.get_color());
+                        }
+                        self.frame_history[ind as usize] = self.frame_buf[ind as usize];
+                    }
+                }
+            }
+        }
     }
 
     pub fn frame_buffer(&self) -> &Vec<Vector3<f64>> {
@@ -254,7 +342,7 @@ fn compute_zvalue(x: f64, y: f64, v: &[Vector3<f64>; 3]) -> f64 {
     let det: f64 = b.x * c.y - b.y * c.x;
     let beta: f64 = (x * c.y - c.x * y) / det;
     let gamma: f64 = (b.x * y - x * b.y) / det;
-    beta * b.z + gamma * c.z
+    v[0].z + beta * b.z + gamma * c.z
 }
 
 fn compute_barycentric2d(x: f64, y: f64, v: &[Vector3<f64>; 3]) -> (f64, f64, f64) {

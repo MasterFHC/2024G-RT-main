@@ -10,4 +10,6 @@ nalgebra = "0.32.1"
 opencv = "0.77.0"
 tobj = "3.2.4"
 clap = "3"  # 命令行参数
+rand = "0.8.5"
+lerp = "0.5.0"
 
