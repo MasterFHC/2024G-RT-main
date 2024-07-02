@@ -53,13 +53,13 @@ impl Rasterizer {
         r
     }
 
-    fn get_index(height: u64, width: u64, x: usize, y: usize) -> usize {
-        ((height - 1 - y as u64) * width + x as u64) as usize
+    fn get_index(&mut self, x: usize, y: usize) -> usize {
+        ((self.height - 1 - y as u64) * self.width + x as u64) as usize
     }
 
-    fn set_pixel(height: u64, width: u64, frame_buf: &mut Vec<Vector3<f64>>, point: &Vector3<f64>, color: &Vector3<f64>) {
-        let ind = (height as f64 - 1.0 - point.y) * width as f64 + point.x;
-        frame_buf[ind as usize] = *color;
+    fn set_pixel(&mut self, point: &Vector3<f64>, color: &Vector3<f64>) {
+        let ind = (self.height as f64 - 1.0 - point.y) * self.width as f64 + point.x;
+        self.frame_buf[ind as usize] = *color;
     }
 
     pub fn clear(&mut self, buff: Buffer) {
@@ -68,7 +68,7 @@ impl Rasterizer {
                 self.frame_buf.fill(Vector3::new(0.0, 0.0, 0.0)),
             Buffer::Depth =>
                 self.depth_buf.fill(f64::MAX),
-            Buffer::Both => {
+            Buffer::Both =>{
                 self.frame_buf.fill(Vector3::new(0.0, 0.0, 0.0));
                 self.depth_buf.fill(f64::MAX);
             }
@@ -102,25 +102,69 @@ impl Rasterizer {
         let mvp = self.projection * self.view * self.model;
 
         // 遍历每个小三角形
+        let mut count = 0;
         for triangle in triangles { 
             self.rasterize_triangle(&triangle, mvp); 
+            count += 1;
+            if count % 1000 == 0 {
+                println!("{} triangles rendered", count);
+            }
         }
     }
 
     pub fn rasterize_triangle(&mut self, triangle: &Triangle, mvp: Matrix4<f64>) {
         /*  Implement your code here  */
-
+        let (mut t, mut view_space_pos) = self.get_new_tri(triangle, self.view, self.model, mvp, (self.width, self.height));
+        let x_min = t.v.iter().map(|v| v.x).fold(f64::INFINITY, |a, b| a.min(b)) as i32;
+        let x_max = t.v.iter().map(|v| v.x).fold(f64::NEG_INFINITY, |a, b| a.max(b)) as i32;
+        let y_min = t.v.iter().map(|v| v.y).fold(f64::INFINITY, |a, b| a.min(b)) as i32;
+        let y_max = t.v.iter().map(|v| v.y).fold(f64::NEG_INFINITY, |a, b| a.max(b)) as i32;
+        // println!("x_min: {}, x_max: {}, y_min: {}, y_max: {}", x_min, x_max, y_min, y_max);
+        for x in x_min-2..x_max+2 {
+            for y in y_min-2..y_max+2 {
+                let x : f64 = x as f64;
+                let y : f64 = y as f64;
+                //convert 4d vector into 3d vector
+                let vec3 = [Vector3::new(t.v[0].x, t.v[0].y, t.v[0].z),
+                         Vector3::new(t.v[1].x, t.v[1].y, t.v[1].z),
+                         Vector3::new(t.v[2].x, t.v[2].y, t.v[2].z)];
+                let (alpha, beta, gamma) = compute_barycentric2d(x, y, &t.v);
+                let z : f64 = alpha * t.v[0].z + beta * t.v[1].z + gamma * t.v[2].z;
+                // println!("color: {:?}", new_col);
+                // println!("z: {}", z);
+                if (inside_triangle(x + 0.5 as f64, y + 0.5 as f64, &t.v)) {
+                    let ind : usize = self.get_index(x as usize, y as usize);
+                    if(self.depth_buf[ind] > z) {
+                        let interpolated_color = self.interpolate_vec3(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1.0);
+                        let interpolated_tex = self.interpolate_vec2(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1.0);
+                        let interpolated_normal = self.interpolate_vec3(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], 1.0);
+                        let interpolated_shading = self.interpolate_vec3(alpha, beta, gamma, view_space_pos[0], view_space_pos[1], view_space_pos[2], 1.0);
+                        let payload = FragmentShaderPayload {
+                            color: interpolated_color,
+                            tex_coords: interpolated_tex,
+                            normal: interpolated_normal.normalize(),
+                            view_pos: interpolated_shading,
+                            texture: self.texture.as_ref().map(|t| Rc::new(t)),
+                        };
+                        let new_color = (self.fragment_shader.unwrap())(&payload);
+                        self.frame_buf[ind as usize] = new_color;
+                        self.depth_buf[ind as usize] = z;
+                        self.set_pixel(&Vector3::new(x, y, z), &new_color);
+                    }
+                }
+            }
+        }
 
     }
     
-    fn interpolate_vec3(a: f64, b: f64, c: f64, vert1: Vector3<f64>, vert2: Vector3<f64>, vert3: Vector3<f64>, weight: f64) -> Vector3<f64> {
+    fn interpolate_vec3(&mut self, a: f64, b: f64, c: f64, vert1: Vector3<f64>, vert2: Vector3<f64>, vert3: Vector3<f64>, weight: f64) -> Vector3<f64> {
         (a * vert1 + b * vert2 + c * vert3) / weight
     }
-    fn interpolate_vec2(a: f64, b: f64, c: f64, vert1: Vector2<f64>, vert2: Vector2<f64>, vert3: Vector2<f64>, weight: f64) -> Vector2<f64> {
+    fn interpolate_vec2(&mut self, a: f64, b: f64, c: f64, vert1: Vector2<f64>, vert2: Vector2<f64>, vert3: Vector2<f64>, weight: f64) -> Vector2<f64> {
         (a * vert1 + b * vert2 + c * vert3) / weight
     }
 
-    fn get_new_tri(t: &Triangle, view: Matrix4<f64>, model: Matrix4<f64>, mvp: Matrix4<f64>,
+    fn get_new_tri(&mut self, t: &Triangle, view: Matrix4<f64>, model: Matrix4<f64>, mvp: Matrix4<f64>, 
                     (width, height): (u64, u64)) -> (Triangle, Vec<Vector3<f64>>) {
         let f1 = (50.0 - 0.1) / 2.0; // zfar和znear距离的一半
         let f2 = (50.0 + 0.1) / 2.0; // zfar和znear的中心z坐标

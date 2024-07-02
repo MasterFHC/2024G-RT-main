@@ -57,7 +57,7 @@ pub(crate) fn get_model_matrix(rotation_angle: f64,scale: f64) -> M4f {
 
 pub(crate) fn get_model_matrix_lab3(rotation_angle: f64) -> M4f {
     let mut model: M4f = Matrix4::identity();
-    let rad = rotation_angle.to_radians();
+    let rad = (rotation_angle).to_radians();
     model[(0, 0)] = rad.cos();
     model[(2, 2)] = model[(0, 0)];
     model[(0, 2)] = rad.sin();
@@ -82,8 +82,8 @@ pub(crate) fn get_projection_matrix(eye_fov: f64, aspect_ratio: f64, z_near: f64
     let left = -right;
     let bottom = -top;
     // perspective projection
-    persp_ortho[(0, 0)] = z_near;
-    persp_ortho[(1, 1)] = z_near;
+    persp_ortho[(0, 0)] = -z_near;
+    persp_ortho[(1, 1)] = -z_near;
     persp_ortho[(2, 2)] = z_near + z_far;
     persp_ortho[(2, 3)] = -z_near * z_far;
     persp_ortho[(3, 2)] = 1.0;
@@ -253,7 +253,7 @@ pub fn texture_fragment_shader(payload: &FragmentShaderPayload) -> V3f {
     for light in lights {
         // LAB3 TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-
+        
     }
 
     result_color * 255.0
