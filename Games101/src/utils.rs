@@ -148,7 +148,7 @@ pub fn choose_shader_texture(method: &str,
         println!("Rasterizing using the normal shader");
         active_shader = normal_fragment_shader;
     } else if method == "texture" {
-        println!("Rasterizing using the normal shader");
+        println!("Rasterizing using the texture shader");
         active_shader = texture_fragment_shader;
         tex = Some(Texture::new(&(obj_path.to_owned() + "spot_texture.png")));
     } else if method == "phong" {
@@ -212,8 +212,13 @@ pub fn phong_fragment_shader(payload: &FragmentShaderPayload) -> V3f {
     for light in lights {
         // LAB3 TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-
-
+        let l = light.position - point;
+        let ln = l.normalize();
+        let v = (eye_pos - point).normalize();
+        let amb = amb_light_intensity.component_mul(&ka);
+        let dif = light.intensity.component_mul(&kd) * f64::max(0.0, normal.dot(&ln)) / l.dot(&l);
+        let spe = light.intensity.component_mul(&ks) * f64::max(0.0, normal.dot(&(ln + v).normalize())).powf(p) / l.dot(&l);
+        result_color += amb + dif + spe;
     }
     result_color * 255.0
 }
@@ -223,9 +228,8 @@ pub fn texture_fragment_shader(payload: &FragmentShaderPayload) -> V3f {
     let texture_color: Vector3<f64> = match &payload.texture {
         // LAB3 TODO: Get the texture value at the texture coordinates of the current fragment
         // <获取材质颜色信息>
-
         None => Vector3::new(0.0, 0.0, 0.0),
-        Some(texture) => Vector3::new(0.0, 0.0, 0.0), // Do modification here
+        Some(texture) => payload.texture.as_ref().unwrap().get_color(payload.tex_coords.x, payload.tex_coords.y),
     };
     let kd = texture_color / 255.0; // 材质颜色影响漫反射系数
     let ks = Vector3::new(0.7937, 0.7937, 0.7937);
@@ -253,7 +257,13 @@ pub fn texture_fragment_shader(payload: &FragmentShaderPayload) -> V3f {
     for light in lights {
         // LAB3 TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-        
+        let l = light.position - point;
+        let ln = l.normalize();
+        let v = (eye_pos - point).normalize();
+        let amb = amb_light_intensity.component_mul(&ka);
+        let dif = light.intensity.component_mul(&kd) * f64::max(0.0, normal.dot(&ln)) / l.dot(&l);
+        let spe = light.intensity.component_mul(&ks) * f64::max(0.0, normal.dot(&(ln + v).normalize())).powf(p) / l.dot(&l);
+        result_color += amb + dif + spe;
     }
 
     result_color * 255.0
