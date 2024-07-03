@@ -23,7 +23,7 @@ impl Texture {
     }
 
     pub fn get_color(&self, mut u: f64, mut v: f64) -> Vector3<f64> {
-        println!("u: {}, v: {}", u, v);
+        // println!("u: {}, v: {}", u, v);
         if u < 0.0 { u = 0.0; }
         if u > 1.0 { u = 0.999; }
         if v < 0.0 { v = 0.0; }
