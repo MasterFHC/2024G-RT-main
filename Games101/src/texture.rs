@@ -24,9 +24,9 @@ impl Texture {
 
     pub fn get_color(&self, mut u: f64, mut v: f64) -> Vector3<f64> {
         // println!("u: {}, v: {}", u, v);
-        if u < 0.0 { u = 0.0; }
+        if u < 0.0 { u = 0.001; }
         if u > 1.0 { u = 0.999; }
-        if v < 0.0 { v = 0.0; }
+        if v < 0.0 { v = 0.001; }
         if v > 1.0 { v = 0.999; }
 
         let u_img = u * self.width as f64;

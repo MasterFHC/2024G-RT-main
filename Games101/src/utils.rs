@@ -59,9 +59,9 @@ pub(crate) fn get_model_matrix_lab3(rotation_angle: f64) -> M4f {
     let mut model: M4f = Matrix4::identity();
     let rad = (rotation_angle).to_radians();
     model[(0, 0)] = rad.cos();
-    model[(2, 2)] = model[(0, 0)];
+    model[(2, 2)] = -model[(0, 0)];
     model[(0, 2)] = rad.sin();
-    model[(2, 0)] = -model[(0, 2)];
+    model[(2, 0)] = model[(0, 2)];
     let mut scale: M4f = Matrix4::identity();
     scale[(0, 0)] = 2.5;
     scale[(1, 1)] = 2.5;
