@@ -1,5 +1,5 @@
 /*
-**使用了蒋捷提供的util.rs
+**使用了蒋捷提供的util.rs，我进行了一些修改
 */
 // pub use crate::aabb::BvhNode;
 pub use crate::ray::Ray;
@@ -7,24 +7,6 @@ pub use crate::ray::Ray;
 pub use crate::vec3::Vec3;
 // pub use crate::world::world::Object;
 use rand::{rngs::ThreadRng, Rng};
-
-//这个函数是个人的使用方法，是计算从视窗左下角开始，往水平方向和垂直方向上第(u,v)个像素，相机到该点的光线方向
-//书上的实现是从左上角开始
-//有所不同是因为个人的代码奇怪特性（过于丑陋不便展示）
-//自行判断使用 [warning]
-pub fn ray_dir(
-    lower_left_corner: &Vec3,
-    horizontal: &Vec3,
-    vertical: &Vec3,
-    u: f64,
-    v: f64,
-    offset: Vec3,
-) -> Vec3 {
-    *lower_left_corner//从左下角开始
-    + *horizontal * u //水平方向
-    + *vertical * v //竖直方向
-    -offset
-}
 
 //计算单位向量
 pub fn unit_vec(v: Vec3) -> Vec3 {
@@ -86,8 +68,8 @@ pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
     v - n * (v * n) * 2.0
 }
 
-//计算单位球中一个随机单位向量
-pub fn random_in_unit_shpere() -> Vec3 {
+//计算单位球上一个随机单位向量
+pub fn random_on_unit_sphere() -> Vec3 {
     let mut random: ThreadRng = rand::thread_rng();
     loop {
         let p = Vec3::new(
@@ -95,15 +77,25 @@ pub fn random_in_unit_shpere() -> Vec3 {
             random.gen_range(-1.0..1.0),
             random.gen_range(-1.0..1.0),
         );
-        if p.squared_length() >= 1.0 {
+        if p.squared_length() > 1.0 {
             continue;
         }
         let tmp: Vec3 = unit_vec(p);
-        if tmp.near_zero() {
-            return Vec3::zero();
-        } else {
-            return tmp;
-        }
+        return tmp;
+        // if tmp.near_zero() {
+        //     return Vec3::zero();
+        // } else {
+        //     return tmp;
+        // }
+    }
+}
+
+pub fn random_on_hemi_sphere(normal: Vec3) -> Vec3 {
+    let on_unit_sphere = random_on_unit_sphere();
+    if on_unit_sphere * normal > 0.0 {
+        on_unit_sphere
+    } else {
+        on_unit_sphere * (-1.0)
     }
 }
 

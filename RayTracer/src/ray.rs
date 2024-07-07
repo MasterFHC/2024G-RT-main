@@ -4,6 +4,7 @@
 use crate::hittables::{hit_record, hittable};
 pub use crate::vec3::Vec3;
 use crate::Interval;
+use crate::util;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ray {
@@ -29,15 +30,23 @@ impl Ray {
         println!("dir");
         self.b_direction.info();
     }
-    pub fn ray_color(&self, world: &dyn hittable) -> Vec3 {
+    pub fn ray_color(&self, world: &dyn hittable, depth: u32) -> Vec3 {
+        if depth <= 0 {
+            return Vec3::zero();
+        }
         let mut rec: hit_record = hit_record {
             p: Vec3::zero(),
             normal: Vec3::zero(),
             t: 0.0,
             front_face: false,
         };
-        if world.hit(&self, Interval::new(0.0, f64::INFINITY), &mut rec) {
-            return (rec.normal + Vec3::new(1.0, 1.0, 1.0)) * 0.5;
+        if world.hit(&self, Interval::new(0.001, f64::INFINITY), &mut rec) {
+            // let direction = util::random_on_hemi_sphere(rec.normal);
+
+            //Lamberitan reflection
+            let direction = rec.normal + util::random_on_unit_sphere();
+
+            return Ray::new(rec.p, direction, self.time).ray_color(world, depth - 1) * 0.9;
         }
 
         let unit_direction = self.b_direction.unit_vector();

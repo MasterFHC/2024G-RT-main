@@ -150,6 +150,7 @@ impl Vec3 {
     pub fn as_array(&self) -> [u8; 3] {
         [self.x as u8, self.y as u8, self.z as u8]
     }
+
     // 用于调试信息，输出向量的内容
     //用法： a = Vec3::new(1.0,2.0,3.0),a.info()
     pub fn info(&self) {
