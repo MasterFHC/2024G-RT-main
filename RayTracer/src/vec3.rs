@@ -1,31 +1,165 @@
-use std::ops::{Add, AddAssign};
-
-#[derive(Clone, Debug, PartialEq)]
+/*
+**使用了蒋捷提供的vec3.rs
+*/
+use crate::util::{fmax, fmin};
+use std::ops::{Add, AddAssign, Div, Mul, Sub};
+#[derive(Clone, Debug, PartialEq, Copy)]
 pub struct Vec3 {
     pub x: f64,
     pub y: f64,
     pub z: f64,
 }
 
+impl Vec3{
+    pub fn unit_vector(&self) -> Vec3 {
+        *self / self.length()
+    }
+}
+
+impl Mul for Vec3 { 
+    //相当于重载了 *，重载的是点乘（内积）
+    //用法： a = Vec3::new(1.0, 2.0, 3.0),b = Vec3::new(2.0, 3.0, 4.0),c:f64 = a * b = 20
+    type Output = f64;
+    fn mul(self, other: Vec3) -> f64 {
+        self.x * other.x + self.y * other.y + self.z * other.z
+    }
+}
+
+impl Mul<f64> for Vec3 {
+    //也是重载了 *,但是重载的是标量乘法，而且只重载了向量乘标量的形式
+    //正确用法：a = Vec3::new(1.0, 2.0, 3.0)，b:f64  = 2.0, c:Vec3 = a * b = (2.0,4.0,6.0)
+    //错误用法：c = b * a(标量不能放前面，因为这份代码没有实现)
+    type Output = Self;
+
+    fn mul(self, other: f64) -> Self {
+        Self {
+            x: self.x * other,
+            y: self.y * other,
+            z: self.z * other,
+        }
+    }
+}
+
+impl Div<f64> for Vec3 {
+    //重载了标量除法 / 。
+    ///用法： a = Vec3::new(1.0, 2.0, 3.0)，b:f64  = 2.0, c:Vec3 = a / b = (0.5,1.0,1.5)
+    type Output = Self;
+
+    fn div(self, other: f64) -> Self {
+        Self {
+            x: self.x / other,
+            y: self.y / other,
+            z: self.z / other,
+        }
+    }
+}
 impl Vec3 {
+    //取 x,y,z。理论上x,y,z是pub可以直接取，这样显得专业(TAT)
+    pub fn x(&self) -> f64 {
+        self.x
+    }
+    pub fn y(&self) -> f64 {
+        self.y
+    }
+    pub fn z(&self) -> f64 {
+        self.z
+    }
+
+    //忘了是什么的缩写了，用来在循环中遍历向量
+    //用法：a:Vec3 = Vec3::new(1.0,2.0,3.0) a.lp(0) = 1.0,a.lp(1) = 2.0,a.lp(2) = 3.0
+    pub fn lp(&self, index: u8) -> f64 {
+        if index == 0 {
+            self.x
+        } else if index == 1 {
+            self.y
+        } else {
+            self.z
+        }
+    }
+    //new 新建向量
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
     }
+    //取两个向量中最小的作为向量，用于AABB(book 2)
+    //用法：a = Vec3::new(1.0,2.0,3.0),b = Vec3::new(0.0,3.0,2.0)
+    //Vec3::merge_min(&a,&b).info() -> x = 0 ,y = 2, z = 2
+    //merge_max 类似
+    pub fn merge_min(v1: &Vec3, v2: &Vec3) -> Self {
+        Self {
+            x: fmin(v1.x, v2.x),
+            y: fmin(v1.y, v2.y),
+            z: fmin(v1.z, v2.z),
+        }
+    }
+    pub fn merge_max(v1: &Vec3, v2: &Vec3) -> Self {
+        Self {
+            x: (fmax(v1.x, v2.x)),
+            y: fmax(v1.y, v2.y),
+            z: fmax(v1.z, v2.z),
+        }
+    }
 
+    // 新建全1向量
+    //用法： let a = Vec3::ones();
     pub fn ones() -> Self {
         Self::new(1.0, 1.0, 1.0)
     }
-
+    // 新建全0向量
+    //用法： let a = Vec3::zero();
     pub fn zero() -> Self {
         Self::new(0.0, 0.0, 0.0)
     }
 
+    //判断一个向量是否为0
+    //由于解方程得到的值可能不严格等于0，所以用该方法判断0向量
+    //if a.near_zero(){ ... }
+    pub fn near_zero(&self) -> bool {
+        self.x() < 0.00000001
+            && self.x() > -0.00000001
+            && self.y() < 0.00000001
+            && self.y() > -0.00000001
+            && self.z() < 0.00000001
+            && self.z() > -0.00000001
+    }
+
+    //平方长度
+    //a = Vec3::new(1.0,2.0,3.0),a.squared_length() = 1 + 4 + 9 = 14 
     pub fn squared_length(&self) -> f64 {
         self.x * self.x + self.y * self.y + self.z * self.z
+    }
+
+    //模长
+    //a = Vec3::new(1.0,2.0,3.0),a.length() = 1 + 4 + 9 = f64::sqrt(14) = ... 
+    pub fn length(&self) -> f64 {
+        f64::sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
+    }
+
+    //叉乘
+    //a = Vec3::new(1.0,2.0,3.0)，b = Vec3::new(1.0,2.0,3.0), (a.cross(b) == Vec3::zero()) = True
+    pub fn cross(&self, other: Vec3) -> Self {
+        let x = self.y * other.z - self.z * other.y;
+        let y = self.z * other.x - self.x * other.z;
+        let z = self.x * other.y - self.y * other.x;
+        Vec3 {
+            x: (x),
+            y: (y),
+            z: (z),
+        }
+    }
+
+    pub fn as_array(&self) -> [u8; 3] {
+        [self.x as u8, self.y as u8, self.z as u8]
+    }
+    // 用于调试信息，输出向量的内容
+    //用法： a = Vec3::new(1.0,2.0,3.0),a.info()
+    pub fn info(&self) {
+        println!("x={},y={},z={}", self.x, self.y, self.z);
     }
 }
 
 impl Add for Vec3 {
+    //重载了向量加法
+    //a = Vec3::new(1.0, 2.0, 3.0),b = Vec3::new(2.0, 3.0, 4.0),c:Vec3 = a + b == Vec3::new(3.0,5.0,7.0)
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -38,6 +172,8 @@ impl Add for Vec3 {
 }
 
 impl Add<f64> for Vec3 {
+    //重载了标量加法,同标量乘法，f64只能放在右边
+    //a = Vec3::new(1.0, 2.0, 3.0),b:f64 = 2,c:Vec3 = a + b == Vec3::new(3.0,4.0,5.0)
     type Output = Self;
 
     fn add(self, other: f64) -> Self {
@@ -50,6 +186,8 @@ impl Add<f64> for Vec3 {
 }
 
 impl AddAssign for Vec3 {
+    //重载了向量加等于 +=,
+    //let mut a = Vec3::new(1.0, 2.0, 3.0),b = Vec3::new(2.0, 3.0, 4.0),a += b
     fn add_assign(&mut self, other: Self) {
         *self = Self {
             x: self.x + other.x,
@@ -58,145 +196,16 @@ impl AddAssign for Vec3 {
         };
     }
 }
+impl Sub for Vec3 {
+    //重载了向量减法
+    //a = Vec3::new(1.0, 2.0, 3.0),b = Vec3::new(2.0, 3.0, 4.0),c:Vec3 = a - b == Vec3::new(-1.0,-1.0,-1.0)
+    type Output = Self;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_new() {
-        assert_eq!(Vec3::new(1.0, 2.0, 3.0), Vec3::new(1.0, 2.0, 3.0));
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
+        }
     }
-
-    #[test]
-    fn test_add() {
-        assert_eq!(
-            Vec3::new(1.0, 0.0, -1.0) + Vec3::new(2.0, 4.0, 6.0),
-            Vec3::new(3.0, 4.0, 5.0)
-        )
-    }
-
-    #[test]
-    fn test_add_assign() {
-        let mut x = Vec3::new(1.0, 0.0, -1.0);
-        x += Vec3::new(2.0, 4.0, 6.0);
-        assert_eq!(x, Vec3::new(3.0, 4.0, 5.0))
-    }
-
-    #[test]
-    fn test_add_f64() {
-        assert_eq!(
-            Vec3::new(1.0, 0.0, -1.0) + 233.0,
-            Vec3::new(234.0, 233.0, 232.0)
-        )
-    }
-
-    /*
-    #[test]
-    fn test_add_assign_f64() {
-        let mut x = Vec3::new(1.0, 0.0, -1.0);
-        x += 233.0;
-        assert_eq!(x, Vec3::new(234.0, 233.0, 232.0))
-    }
-
-    #[test]
-    fn test_sub() {
-        assert_eq!(
-            Vec3::new(1.0, 0.0, -1.0) - Vec3::new(2.0, 4.0, 6.0),
-            Vec3::new(-1.0, -4.0, -7.0)
-        )
-    }
-
-    #[test]
-    fn test_sub_assign() {
-        let mut x = Vec3::new(1.0, 0.0, -1.0);
-        x -= Vec3::new(2.0, 4.0, 6.0);
-        assert_eq!(x, Vec3::new(-1.0, -4.0, -7.0))
-    }
-
-    #[test]
-    fn test_sub_f64() {
-        assert_eq!(Vec3::new(1.0, 0.0, -1.0) - 1.0, Vec3::new(0.0, -1.0, -2.0))
-    }
-
-    #[test]
-    fn test_sub_assign_f64() {
-        let mut x = Vec3::new(1.0, 0.0, -1.0);
-        x -= 1.0;
-        assert_eq!(x, Vec3::new(0.0, -1.0, -2.0))
-    }
-
-    #[test]
-    fn test_mul() {
-        assert_eq!(Vec3::new(1.0, 0.0, -1.0) * Vec3::ones(), 0.0);
-    }
-
-    #[test]
-    fn test_mul_assign() {
-        let mut x = Vec3::new(1.0, 0.0, -1.0);
-        x *= 2.0;
-        assert_eq!(x, Vec3::new(2.0, 0.0, -2.0));
-    }
-
-    #[test]
-    fn test_mul_f64() {
-        assert_eq!(Vec3::new(1.0, 0.0, -1.0) * 1.0, Vec3::new(1.0, 0.0, -1.0));
-    }
-
-    #[test]
-    fn test_div() {
-        assert_eq!(Vec3::new(1.0, -2.0, 0.0) / 2.0, Vec3::new(0.5, -1.0, 0.0));
-    }
-
-    #[test]
-    fn test_elemul() {
-        assert_eq!(
-            Vec3::elemul(Vec3::new(1.0, 2.0, 3.0), Vec3::new(1.0, 2.0, 3.0)),
-            Vec3::new(1.0, 4.0, 9.0)
-        );
-    }
-
-    #[test]
-    fn test_cross() {
-        assert_eq!(
-            Vec3::cross(Vec3::new(1.0, 2.0, 3.0), Vec3::new(2.0, 3.0, 4.0)),
-            Vec3::new(8.0 - 9.0, 6.0 - 4.0, 3.0 - 4.0)
-        );
-    }
-
-    #[test]
-    fn test_neg() {
-        assert_eq!(-Vec3::new(1.0, -2.0, 3.0), Vec3::new(-1.0, 2.0, -3.0));
-    }
-    */
-
-    #[test]
-    fn test_squared_length() {
-        assert_eq!(Vec3::new(1.0, 2.0, 3.0).squared_length(), 14.0 as f64);
-    }
-
-    /*
-    #[test]
-    fn test_length() {
-        assert_eq!(
-            Vec3::new(3.0, 4.0, 5.0).length(),
-            ((3.0 * 3.0 + 4.0 * 4.0 + 5.0 * 5.0) as f64).sqrt()
-        );
-    }
-
-    #[test]
-    fn test_unit() {
-        assert_eq!(Vec3::new(233.0, 0.0, 0.0).unit(), Vec3::new(1.0, 0.0, 0.0));
-        assert_eq!(
-            Vec3::new(-233.0, 0.0, 0.0).unit(),
-            Vec3::new(-1.0, 0.0, 0.0)
-        );
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_unit_panic() {
-        Vec3::new(0.0, 0.0, 0.0).unit();
-    }
-    */
 }

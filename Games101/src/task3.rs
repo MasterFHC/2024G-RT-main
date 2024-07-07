@@ -14,7 +14,7 @@ pub fn t3(filename:String,method:String)-> Result<()>{
     println!("选择任务3");
     let obj_file = "./models/spot/spot_triangulated_good.obj";
     let triangles = load_triangles(&obj_file);
-    let angle = 140.0;
+    let angle = 230.0;
     let mut r = Rasterizer::new(700, 700);
     let obj_path = "./models/spot/".to_owned();
     let texture_path = "hmap.jpg".to_owned();
