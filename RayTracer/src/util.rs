@@ -49,17 +49,20 @@ pub fn reflectance(cos_theta: f64, ratio: f64) -> f64 {
 pub fn refract(v: Vec3, n: Vec3, ratio: f64) -> Vec3 {
     //v,n为单位向量
     //按道理应该不会有cos比1大
-    let cos_theta = (Vec3::zero() - v) * n;
-    let sin_theta = f64::sqrt(1.0 - cos_theta * cos_theta);
-    let mut random: ThreadRng = rand::thread_rng();
-    if ratio * sin_theta >= 1.0 || reflectance(cos_theta, ratio) > random.gen::<f64>() {
-        //全反射
-        reflect(v, n)
-    } else {
-        let perp = (v + n * cos_theta) * ratio;
-        let para = Vec3::zero() - n * f64::sqrt(fabs(1.0 - perp.squared_length()));
-        perp + para
-    }
+    let cos_theta = fmin((Vec3::zero() - v) * n, 1.0);
+    let r_out_perp = (v + n * cos_theta) * ratio;
+    let r_out_para = n * f64::sqrt(fabs(1.0 - r_out_perp.squared_length())) * (-1.0);
+    r_out_perp + r_out_para
+    // let sin_theta = f64::sqrt(1.0 - cos_theta * cos_theta);
+    // let mut random: ThreadRng = rand::thread_rng();
+    // if ratio * sin_theta >= 1.0 || reflectance(cos_theta, ratio) > random.gen::<f64>() {
+    //     //全反射
+    //     reflect(v, n)
+    // } else {
+    //     let perp = (v + n * cos_theta) * ratio;
+    //     let para = Vec3::zero() - n * f64::sqrt(fabs(1.0 - perp.squared_length()));
+    //     perp + para
+    // }
 }
 
 //反射模块，简单，v为入射光线，n为法线
@@ -97,6 +100,20 @@ pub fn random_on_hemi_sphere(normal: Vec3) -> Vec3 {
     } else {
         on_unit_sphere * (-1.0)
     }
+}
+
+pub fn random_range(min: f64, max: f64) -> f64 {
+    let mut random: ThreadRng = rand::thread_rng();
+    random.gen_range(min..max)
+}
+
+pub fn random_01_vec3() -> Vec3 {
+    let mut random: ThreadRng = rand::thread_rng();
+    Vec3::new(
+        random.gen_range(0.0..1.0),
+        random.gen_range(0.0..1.0),
+        random.gen_range(0.0..1.0),
+    )
 }
 
 //正方体中随机向量

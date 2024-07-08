@@ -2,9 +2,11 @@
 **使用了蒋捷提供的ray.rs
 */
 use crate::hittables::{hit_record, hittable};
+use crate::materials::{material, lambertian, metal};
 pub use crate::vec3::Vec3;
 use crate::Interval;
 use crate::util;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ray {
@@ -39,14 +41,20 @@ impl Ray {
             normal: Vec3::zero(),
             t: 0.0,
             front_face: false,
+            mat: Rc::new(lambertian { albedo: Vec3::zero() }),
         };
         if world.hit(&self, Interval::new(0.001, f64::INFINITY), &mut rec) {
-            // let direction = util::random_on_hemi_sphere(rec.normal);
-
-            //Lamberitan reflection
-            let direction = rec.normal + util::random_on_unit_sphere();
-
-            return Ray::new(rec.p, direction, self.time).ray_color(world, depth - 1) * 0.9;
+            let mut scattered = Ray::new(Vec3::zero(), Vec3::zero(), 0.0);
+            let mut attenuation = Vec3::new(1.0, 1.0, 1.0);
+            if rec.mat.scatter(&self, &rec, &mut attenuation, &mut scattered) {
+                let new_ray_color = scattered.ray_color(world, depth - 1);
+                return Vec3::new(
+                    attenuation.x() * new_ray_color.x(),
+                    attenuation.y() * new_ray_color.y(),
+                    attenuation.z() * new_ray_color.z(),
+                );
+            }
+            return Vec3::new(0.0, 0.0, 0.0);
         }
 
         let unit_direction = self.b_direction.unit_vector();

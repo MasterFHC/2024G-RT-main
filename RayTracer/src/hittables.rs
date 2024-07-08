@@ -1,12 +1,17 @@
 pub use crate::ray::Ray;
 pub use crate::vec3::Vec3;
 use crate::Interval;
+use crate::materials::{material, lambertian, metal};
+use std::rc::Rc;
 
 pub struct hit_record {
     pub p: Vec3,
     pub normal: Vec3,
     pub t: f64,
     pub front_face: bool,
+
+    //material
+    pub mat: Rc<dyn material>,
 }
 
 impl hit_record {
@@ -48,6 +53,7 @@ impl hittable for hittable_list {
             normal: Vec3::zero(),
             t: 0.0,
             front_face: false,
+            mat: Rc::new(lambertian { albedo: Vec3::zero() }),
         };
         let mut hit_anything = false;
         let mut closest_so_far = ray_t.tmax;
@@ -62,6 +68,7 @@ impl hittable for hittable_list {
                 rec.normal = rec_temp.normal;
                 rec.t = rec_temp.t;
                 rec.front_face = rec_temp.front_face;
+                rec.mat = Rc::clone(&rec_temp.mat);
             }
         }
 

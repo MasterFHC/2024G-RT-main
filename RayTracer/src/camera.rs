@@ -8,6 +8,7 @@ use crate::sphere::Sphere;
 use crate::hittables::{hit_record, hittable_list, hittable};
 use crate::intervals::Interval;
 use crate::util;
+use crate::materials::{material, lambertian, metal};
 
 pub struct Camera {
     //basic camera settings
@@ -27,10 +28,26 @@ pub struct Camera {
     //avoid too much recursion
     pub max_depth: u32,
 
+    //positionable camera
+    pub vfov: f64,
+    pub lookfrom: Vec3,
+    pub lookat: Vec3,
+    pub vup: Vec3,
+    u: Vec3, // basis vectors
+    v: Vec3,
+    w: Vec3,
+
+    //defocus blur
+    pub defocus_angle: f64,
+    pub focus_dist: f64,
+    defocus_disk_u: Vec3,
+    defocus_disk_v: Vec3,
 }
 
 impl Camera {
-    pub fn new(aspect_ratio: f64, image_width: u32, quality: u8, samples_per_pixel: u32, max_depth: u32) -> Self {
+    pub fn new(aspect_ratio: f64, image_width: u32, quality: u8, samples_per_pixel: u32, max_depth: u32, 
+            vfov: f64, lookfrom: Vec3, lookat: Vec3, vup: Vec3,
+            defocus_angle: f64, focus_dist: f64) -> Self {
         Self {
             aspect_ratio,
             image_width,
@@ -47,6 +64,21 @@ impl Camera {
 
             //avoid too much recursion
             max_depth,
+
+            //positionable camera
+            vfov,
+            lookfrom,
+            lookat,
+            vup,
+            u: Vec3::zero(),
+            v: Vec3::zero(),
+            w: Vec3::zero(),
+
+            //defocus blur
+            defocus_angle,
+            focus_dist,
+            defocus_disk_u: Vec3::zero(),
+            defocus_disk_v: Vec3::zero(),
         }
     }
     fn initialize(&mut self) {
@@ -62,29 +94,48 @@ impl Camera {
             ProgressBar::new((self.image_height * self.image_width) as u64)
         };
 
-        let focal_length = 1.0;
-        let viewport_height = 2.0;
+
+        // let focal_length = (self.lookfrom - self.lookat).length();
+        let theta = self.vfov.to_radians();
+        let h = f64::tan(theta / 2.0);
+        let viewport_height = 2.0 * h * self.focus_dist;
         let viewport_width = self.aspect_ratio * viewport_height;
-        self.camera_center = Vec3::new(0.0, 0.0, 0.0);
+        self.camera_center = self.lookfrom;
+
+        //Calculate the basis vectors
+        self.w = (self.lookfrom - self.lookat).unit_vector();
+        self.u = self.vup.cross(self.w).unit_vector();
+        self.v = self.w.cross(self.u);
 
         //Calculate the vectors across the horizontal and vertical axes of the viewport
-        let viewport_u = Vec3::new(viewport_width, 0.0, 0.0);
-        let viewport_v = Vec3::new(0.0, -viewport_height, 0.0);
+        let viewport_u = self.u * viewport_width;
+        let viewport_v = self.v * viewport_height * (-1.0);
 
         self.delta_u = viewport_u / self.image_width as f64;
         self.delta_v = viewport_v / self.image_height as f64;
 
         //Calculate the location of the top left pixel
-        let viewport_upper_left = self.camera_center - viewport_u / 2.0 - viewport_v / 2.0 - Vec3::new(0.0, 0.0, focal_length);
+        let viewport_upper_left = self.camera_center - viewport_u / 2.0 - viewport_v / 2.0 - self.w * self.focus_dist;
         self.pixel00_loc = viewport_upper_left + (self.delta_u + self.delta_v) * 0.5;
+
+        //Calculate the defocus disk basis vectors
+        let defocus_radius = self.focus_dist * (self.defocus_angle.to_radians() / 2.0).tan();
+        self.defocus_disk_u = self.u * defocus_radius;
+        self.defocus_disk_v = self.v * defocus_radius;
     }
     fn get_ray(&self, u: f64, v: f64) -> Ray {
         let offset = util::random_vec3() * 0.5;
         let pixel_loc = self.pixel00_loc 
                         + self.delta_u * (u + offset.x)  
                         + self.delta_v * (v + offset.y);
-        let ray_origin = self.camera_center;
-        let ray_dir = pixel_loc - self.camera_center;
+        let ray_origin = if self.defocus_angle <= 0.0 {
+            self.camera_center
+        } else {
+            let p = util::random_in_unit_disk();
+            let disk_offset = self.defocus_disk_u * p.x + self.defocus_disk_v * p.y;
+            self.camera_center + disk_offset
+        };
+        let ray_dir = pixel_loc - ray_origin;
 
         Ray::new(ray_origin, ray_dir, 0.0)
     }
@@ -104,7 +155,10 @@ impl Camera {
                     let ray = self.get_ray(i as f64, j as f64);
                     pixel_color += ray.ray_color(world, self.max_depth);
                 }
-                write_color(pixel_color * (1.0 / self.samples_per_pixel as f64), &mut img, i as usize, j as usize);
+
+                let written_color = pixel_color * (1.0 / self.samples_per_pixel as f64);
+                // println!("Pixel color: {:?}", written_color);
+                write_color(written_color, &mut img, i as usize, j as usize);
                 self.bar.inc(1);
             }
         }
