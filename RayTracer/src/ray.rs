@@ -43,7 +43,7 @@ impl Ray {
             front_face: false,
             mat: Rc::new(lambertian { albedo: Vec3::zero() }),
         };
-        if world.hit(&self, Interval::new(0.001, f64::INFINITY), &mut rec) {
+        if world.hit(&self, &mut Interval::new(0.001, f64::INFINITY), &mut rec) {
             let mut scattered = Ray::new(Vec3::zero(), Vec3::zero(), 0.0);
             let mut attenuation = Vec3::new(1.0, 1.0, 1.0);
             if rec.mat.scatter(&self, &rec, &mut attenuation, &mut scattered) {

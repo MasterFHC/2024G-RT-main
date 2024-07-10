@@ -7,6 +7,8 @@ mod hittables;
 mod intervals;
 mod camera;
 mod materials;
+mod aabb;
+mod bvh;
 
 use vec3::Vec3;
 use ray::Ray;
@@ -18,8 +20,11 @@ use materials::{material, lambertian, metal, dielectric};
 use std::rc::Rc;
 
 fn main() {
+    let ASPECT_RATIO = 16.0 / 9.0 as f64;
+    let IMAGE_WIDTH = 400 as u32;
+
     let SAMPLES_PER_PIXEL = 100 as u32;
-    let MAX_DEPTH = 20 as u32;
+    let MAX_DEPTH = 50 as u32;
     let VFOV = 20.0 as f64;
 
     let LOOKFROM = Vec3::new(13.0, 2.0, 3.0);
@@ -46,7 +51,11 @@ fn main() {
                                            util::random_f64_0_1() * util::random_f64_0_1(), 
                                            util::random_f64_0_1() * util::random_f64_0_1());
                     sphere_material = Rc::new(lambertian::new(albedo));
-                    world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+                    // world.add(Box::new(Sphere::new(center, 0.2, sphere_material)));
+
+                    //bouncy balls
+                    let center2 = center + Vec3::new(0.0, util::random_range(0.0, 0.5), 0.0);
+                    world.add(Box::new(Sphere::new_moving(center, center2, 0.2, sphere_material)));
                 } else if choose_mat < 0.95 {
                     //metal
                     let albedo = Vec3::new(util::random_range(0.5, 1.0), util::random_range(0.5, 1.0), util::random_range(0.5, 1.0));
@@ -71,7 +80,7 @@ fn main() {
     let material3 = Rc::new(metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0));
     world.add(Box::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, material3)));
 
-    let mut cam: Camera = Camera::new(16.0 / 9.0, 3200, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
+    let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
                                         VFOV, LOOKFROM, LOOKAT, VUP,
                                         DEFOCUS_ANGLE, FOCUS_DIST);
     cam.render(world);

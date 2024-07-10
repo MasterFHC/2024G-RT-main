@@ -137,7 +137,8 @@ impl Camera {
         };
         let ray_dir = pixel_loc - ray_origin;
 
-        Ray::new(ray_origin, ray_dir, 0.0)
+        let ray_time = util::random_f64_0_1();
+        Ray::new(ray_origin, ray_dir, ray_time)
     }
 
     pub fn render(&mut self, world: &hittable_list) {

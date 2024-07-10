@@ -35,7 +35,6 @@ pub fn t1()-> Result<()>{
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45.0, 1.0, 0.1, 50.0));
         r.set_rotation(get_rotation_matrix(Vector3::new(1.0, 1.0, 1.0), angle));
-
         r.draw_triangle(pos_id, ind_id, Primitive::Triangle);
 
         let frame_buffer = r.frame_buffer();

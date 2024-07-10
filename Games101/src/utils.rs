@@ -48,8 +48,8 @@ pub(crate) fn get_model_matrix(rotation_angle: f64,scale: f64) -> M4f {
     let rad = rotation_angle.to_radians();
 
     model[(0, 0)] = rad.cos();
-    model[(0, 1)] = -rad.sin();
-    model[(1, 0)] = rad.sin();
+    model[(0, 1)] = rad.sin();
+    model[(1, 0)] = -rad.sin();
     model[(1, 1)] = rad.cos();
     
     model

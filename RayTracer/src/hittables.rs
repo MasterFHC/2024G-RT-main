@@ -3,6 +3,7 @@ pub use crate::vec3::Vec3;
 use crate::Interval;
 use crate::materials::{material, lambertian, metal};
 use std::rc::Rc;
+use crate::aabb::AABB;
 
 pub struct hit_record {
     pub p: Vec3,
@@ -27,27 +28,33 @@ impl hit_record {
 }
 
 pub trait hittable {
-    fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut hit_record) -> bool;
+    fn hit(&self, r: &Ray, ray_t: &mut Interval, rec: &mut hit_record) -> bool;
+    fn bbox(&self) -> &AABB;
 }
 
 pub struct hittable_list {
     pub objects: Vec<Box<dyn hittable>>,
+    pub bbox: AABB,
 }
 
 impl hittable_list {
     pub fn new() -> Self {
         Self {
             objects: Vec::new(),
+            bbox: AABB::new(Interval::new(f64::INFINITY, f64::INFINITY), 
+                            Interval::new(f64::INFINITY, f64::INFINITY), 
+                            Interval::new(f64::INFINITY, f64::INFINITY)),
         }
     }
     pub fn add(&mut self, object: Box<dyn hittable>) {
+        self.bbox = AABB::new_from_boxes(&self.bbox, &object.bbox());
         self.objects.push(object);
     }
 }
 
 impl hittable for hittable_list {
 
-    fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut hit_record) -> bool {
+    fn hit(&self, r: &Ray, ray_t: &mut Interval, rec: &mut hit_record) -> bool {
         let mut rec_temp = hit_record {
             p: Vec3::zero(),
             normal: Vec3::zero(),
@@ -59,7 +66,7 @@ impl hittable for hittable_list {
         let mut closest_so_far = ray_t.tmax;
 
         for object in self.objects.iter() {
-            if object.hit(r, Interval::new(ray_t.tmin, closest_so_far), &mut rec_temp) {
+            if object.hit(r, &mut Interval::new(ray_t.tmin, closest_so_far), &mut rec_temp) {
                 hit_anything = true;
                 closest_so_far = rec_temp.t;
 
@@ -73,5 +80,9 @@ impl hittable for hittable_list {
         }
 
         hit_anything
+    }
+
+    fn bbox(&self) -> &AABB {
+        &self.bbox
     }
 }

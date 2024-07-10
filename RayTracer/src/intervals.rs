@@ -1,3 +1,5 @@
+use crate::util;
+
 pub struct Interval {
     pub tmin: f64,
     pub tmax: f64,
@@ -6,8 +8,14 @@ pub struct Interval {
 impl Interval {
     pub fn new(tmin: f64, tmax: f64) -> Self {
         Self {
-            tmin,
-            tmax,
+            tmin: util::fmin(tmin, tmax),
+            tmax: util::fmax(tmin, tmax),
+        }
+    }
+    pub fn new_from_interval(a: &Interval, b: &Interval) -> Self {
+        Self {
+            tmin: util::fmin(a.tmin, b.tmin),
+            tmax: util::fmax(a.tmax, b.tmax),
         }
     }
     pub fn size(&self) -> f64 {
@@ -26,6 +34,13 @@ impl Interval {
             self.tmax
         } else {
             t
+        }
+    }
+    pub fn expand(&self, delta: f64) -> Self {
+        let padding = delta * 0.5;
+        Self {
+            tmin: self.tmin - padding,
+            tmax: self.tmax + padding,
         }
     }
 }
