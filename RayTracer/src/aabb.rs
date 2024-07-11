@@ -46,10 +46,10 @@ impl AABB {
         }
     }
 
-    pub fn hit(&self, r: &Ray, org_ray_t: &mut Interval) -> bool{
+    pub fn hit(&self, r: &Ray, org_ray_t: &Interval) -> bool{
         let ray_origin = r.a_origin;
         let ray_direction = r.b_direction;
-        let mut ray_t = org_ray_t;
+        let mut ray_t = Interval::new(org_ray_t.tmin, org_ray_t.tmax);
 
         for i in 0..3 {
             let adinv = 1.0 / ray_direction.lp(i);

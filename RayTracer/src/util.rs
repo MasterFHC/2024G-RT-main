@@ -106,7 +106,10 @@ pub fn random_range(min: f64, max: f64) -> f64 {
     let mut random: ThreadRng = rand::thread_rng();
     random.gen_range(min..max)
 }
-
+pub fn random_range_int(min: i32, max: i32) -> i32 {
+    let mut random: ThreadRng = rand::thread_rng();
+    random.gen_range(min..max)
+}
 pub fn random_01_vec3() -> Vec3 {
     let mut random: ThreadRng = rand::thread_rng();
     Vec3::new(

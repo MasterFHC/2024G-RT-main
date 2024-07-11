@@ -7,6 +7,7 @@ pub use crate::vec3::Vec3;
 use crate::Interval;
 use crate::util;
 use std::rc::Rc;
+use crate::textures::{texture, SolidColor};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ray {
@@ -41,7 +42,10 @@ impl Ray {
             normal: Vec3::zero(),
             t: 0.0,
             front_face: false,
-            mat: Rc::new(lambertian { albedo: Vec3::zero() }),
+            // mat: Rc::new(lambertian { tex: Rc::new(SolidColor::new(Vec3::zero())) }),
+            mat: Rc::new(lambertian::new_from_texture(Rc::new(SolidColor::new(Vec3::zero())))),
+            u: 0.0,
+            v: 0.0,
         };
         if world.hit(&self, &mut Interval::new(0.001, f64::INFINITY), &mut rec) {
             let mut scattered = Ray::new(Vec3::zero(), Vec3::zero(), 0.0);

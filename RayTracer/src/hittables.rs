@@ -4,6 +4,7 @@ use crate::Interval;
 use crate::materials::{material, lambertian, metal};
 use std::rc::Rc;
 use crate::aabb::AABB;
+use crate::SolidColor;
 
 pub struct hit_record {
     pub p: Vec3,
@@ -13,6 +14,10 @@ pub struct hit_record {
 
     //material
     pub mat: Rc<dyn material>,
+
+    //texture
+    pub u: f64,
+    pub v: f64,
 }
 
 impl hit_record {
@@ -28,13 +33,15 @@ impl hit_record {
 }
 
 pub trait hittable {
-    fn hit(&self, r: &Ray, ray_t: &mut Interval, rec: &mut hit_record) -> bool;
+    fn hit(&self, r: &Ray, ray_t: &Interval, rec: &mut hit_record) -> bool;
     fn bbox(&self) -> &AABB;
 }
 
 pub struct hittable_list {
-    pub objects: Vec<Box<dyn hittable>>,
+    pub objects: Vec<Rc<dyn hittable>>,
     pub bbox: AABB,
+
+    is_first_bbox: bool,
 }
 
 impl hittable_list {
@@ -44,29 +51,43 @@ impl hittable_list {
             bbox: AABB::new(Interval::new(f64::INFINITY, f64::INFINITY), 
                             Interval::new(f64::INFINITY, f64::INFINITY), 
                             Interval::new(f64::INFINITY, f64::INFINITY)),
+            is_first_bbox: true,
         }
     }
-    pub fn add(&mut self, object: Box<dyn hittable>) {
-        self.bbox = AABB::new_from_boxes(&self.bbox, &object.bbox());
+    pub fn new_from_object(object: Rc<dyn hittable>) -> Self {
+        let mut list = Self::new();
+        list.add(object);
+        list
+    }
+    pub fn add(&mut self, object: Rc<dyn hittable>) {
+        // if self.is_first_bbox {
+        //     self.bbox = object.bbox().clone();
+        //     self.is_first_bbox = false;
+        // } else {
+        //     self.bbox = AABB::new_from_boxes(&self.bbox, &object.bbox());
+        // }
         self.objects.push(object);
     }
 }
 
 impl hittable for hittable_list {
 
-    fn hit(&self, r: &Ray, ray_t: &mut Interval, rec: &mut hit_record) -> bool {
+    fn hit(&self, r: &Ray, ray_t: &Interval, rec: &mut hit_record) -> bool {
         let mut rec_temp = hit_record {
             p: Vec3::zero(),
             normal: Vec3::zero(),
             t: 0.0,
             front_face: false,
-            mat: Rc::new(lambertian { albedo: Vec3::zero() }),
+            // mat: Rc::new(lambertian { tex: Rc::new(SolidColor::new(Vec3::zero())) }),
+            mat: Rc::new(lambertian::new_from_texture(Rc::new(SolidColor::new(Vec3::zero())))),
+            u: 0.0,
+            v: 0.0,
         };
         let mut hit_anything = false;
         let mut closest_so_far = ray_t.tmax;
 
         for object in self.objects.iter() {
-            if object.hit(r, &mut Interval::new(ray_t.tmin, closest_so_far), &mut rec_temp) {
+            if object.hit(r, &Interval::new(ray_t.tmin, closest_so_far), &mut rec_temp) {
                 hit_anything = true;
                 closest_so_far = rec_temp.t;
 
