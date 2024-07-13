@@ -50,6 +50,7 @@ impl Ray {
         if world.hit(&self, &mut Interval::new(0.001, f64::INFINITY), &mut rec) {
             let mut scattered = Ray::new(Vec3::zero(), Vec3::zero(), 0.0);
             let mut attenuation = Vec3::new(1.0, 1.0, 1.0);
+            // println!("got u: {}, got v: {}", rec.u, rec.v);
             if rec.mat.scatter(&self, &rec, &mut attenuation, &mut scattered) {
                 let new_ray_color = scattered.ray_color(world, depth - 1);
                 return Vec3::new(

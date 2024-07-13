@@ -60,6 +60,12 @@ impl Sphere {
     pub fn sphere_center(&self, time: f64) -> Vec3 {
         self.center + self.center_vec * time
     }
+    fn get_sphere_uv(p: Vec3, u: &mut f64, v: &mut f64) {
+        let theta = (-p.y).acos();
+        let phi = (-p.z).atan2(p.x) + std::f64::consts::PI;
+        *u = phi / (2.0 * std::f64::consts::PI);
+        *v = theta / std::f64::consts::PI;
+    }
 }
 
 impl hittable for Sphere {
@@ -87,6 +93,7 @@ impl hittable for Sphere {
         rec.p = r.at(root);
         let outward_normal = (rec.p - center) / self.radius;
         rec.set_face_normal(r, &outward_normal);
+        Self::get_sphere_uv(outward_normal, &mut rec.u, &mut rec.v);
         //dyn type can not be cloned, we use refrence count Rc to clone it
         rec.mat = Rc::clone(&self.mat);
 

@@ -91,7 +91,8 @@ impl Camera {
         self.bar = if is_ci() {
             ProgressBar::hidden()
         } else {
-            ProgressBar::new((self.image_height * self.image_width) as u64)
+            //ProgressBar::new((self.image_height * self.image_width) as u64)
+            ProgressBar::new((self.image_height) as u64)  //this is faster
         };
 
 
@@ -160,8 +161,9 @@ impl Camera {
                 let written_color = pixel_color * (1.0 / self.samples_per_pixel as f64);
                 // println!("Pixel color: {:?}", written_color);
                 write_color(written_color, &mut img, i as usize, j as usize);
-                self.bar.inc(1);
+                // self.bar.inc(1);
             }
+            self.bar.inc(1); //this is faster
         }
 
         let path = "output/test.jpg";

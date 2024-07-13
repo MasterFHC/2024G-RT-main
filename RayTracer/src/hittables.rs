@@ -97,6 +97,8 @@ impl hittable for hittable_list {
                 rec.t = rec_temp.t;
                 rec.front_face = rec_temp.front_face;
                 rec.mat = Rc::clone(&rec_temp.mat);
+                rec.u = rec_temp.u;
+                rec.v = rec_temp.v;
             }
         }
 

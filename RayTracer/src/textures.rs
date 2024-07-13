@@ -1,5 +1,7 @@
 use crate::vec3::Vec3;
 use std::rc::Rc;
+use opencv::core::{MatTraitConst, VecN};
+use opencv::imgcodecs::{imread, IMREAD_COLOR};
 
 pub trait texture {
     fn value(&self, u: f64, v: f64, p: &Vec3) -> Vec3;
@@ -57,5 +59,54 @@ impl texture for Checker {
         } else {
             self.odd.value(u, v, p)
         }
+    }
+}
+
+pub struct Image {
+    pub img_data: opencv::core::Mat,
+    width: u32,
+    height: u32,
+}
+
+impl Image {
+    pub fn new(filename: &str) -> Self {
+        let img_data = imread(&("./mytexture/".to_owned() + filename), IMREAD_COLOR).expect("Image reading error!");
+        let width = img_data.cols() as u32;
+        let height = img_data.rows() as u32;
+        Self {
+            img_data,
+            width,
+            height,
+        }
+    }
+    pub fn get_color(&self, mut u: f64, mut v: f64) -> Vec3 {
+        // println!("u: {}, v: {}", u, v);
+        if u <= 0.0 { u = 0.001; }
+        if u >= 1.0 { u = 0.999; }
+        if v <= 0.0 { v = 0.001; }
+        if v >= 1.0 { v = 0.999; }
+
+        let u_img = u * self.width as f64;
+        let v_img = (1.0 - v) * self.height as f64;
+        let color: &VecN<u8, 3> = self.img_data.at_2d(v_img as i32, u_img as i32).unwrap();
+        // println!("color: {:?}", color);
+
+        Vec3::new(color[2] as f64, color[1] as f64, color[0] as f64) * (1.0 / 255.0)
+    }
+}
+
+impl texture for Image {
+    fn value(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+        if self.width == 0 || self.height == 0 {
+            return Vec3::new(0.0, 1.0, 1.0);
+        }
+        let org_color = self.get_color(u, v);
+
+        //Adjust the color to right gamma
+        Vec3::new(
+            org_color.x * org_color.x(),
+            org_color.y * org_color.y(),
+            org_color.z * org_color.z(),
+        )
     }
 }
