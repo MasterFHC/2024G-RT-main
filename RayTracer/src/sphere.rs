@@ -4,7 +4,7 @@ pub use crate::util::{fmax};
 pub use crate::hittables::{hit_record, hittable};
 use crate::materials::{material};
 use crate::Interval;
-use std::rc::Rc;
+use std::sync::Arc;
 use crate::aabb::AABB;
 
 pub struct Sphere {
@@ -12,7 +12,7 @@ pub struct Sphere {
     pub radius: f64,
 
     //material
-    pub mat: Rc<dyn material>,
+    pub mat: Arc<dyn material + Send + Sync>,
 
     //moving parts
     is_moving: bool,
@@ -24,7 +24,7 @@ pub struct Sphere {
 
 impl Sphere {
     // Stationary sphere
-    pub fn new(center: Vec3, radius: f64, mat: Rc<dyn material>) -> Self {
+    pub fn new(center: Vec3, radius: f64, mat: Arc<dyn material + Send + Sync>) -> Self {
         let rvec = Vec3::new(fmax(0.0, radius), fmax(0.0, radius), fmax(0.0, radius));
         Self {
             center,
@@ -39,7 +39,7 @@ impl Sphere {
             bbox: AABB::new_from_points(center - rvec, center + rvec),
         }
     }
-    pub fn new_moving(center1: Vec3, center2: Vec3, radius: f64, mat: Rc<dyn material>) -> Self {
+    pub fn new_moving(center1: Vec3, center2: Vec3, radius: f64, mat: Arc<dyn material + Send + Sync>) -> Self {
         let rvec = Vec3::new(fmax(0.0, radius), fmax(0.0, radius), fmax(0.0, radius));
         let box1 = AABB::new_from_points(center1 - rvec, center1 + rvec);
         let box2 = AABB::new_from_points(center2 - rvec, center2 + rvec);
@@ -94,8 +94,8 @@ impl hittable for Sphere {
         let outward_normal = (rec.p - center) / self.radius;
         rec.set_face_normal(r, &outward_normal);
         Self::get_sphere_uv(outward_normal, &mut rec.u, &mut rec.v);
-        //dyn type can not be cloned, we use refrence count Rc to clone it
-        rec.mat = Rc::clone(&self.mat);
+        //dyn type can not be cloned, we use refrence count Arc to clone it
+        rec.mat = Arc::clone(&self.mat);
 
         true
     }

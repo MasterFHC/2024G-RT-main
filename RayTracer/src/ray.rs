@@ -6,7 +6,7 @@ use crate::materials::{material, lambertian, metal};
 pub use crate::vec3::Vec3;
 use crate::Interval;
 use crate::util;
-use std::rc::Rc;
+use std::sync::Arc;
 use crate::textures::{texture, SolidColor};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -42,8 +42,8 @@ impl Ray {
             normal: Vec3::zero(),
             t: 0.0,
             front_face: false,
-            // mat: Rc::new(lambertian { tex: Rc::new(SolidColor::new(Vec3::zero())) }),
-            mat: Rc::new(lambertian::new_from_texture(Rc::new(SolidColor::new(Vec3::zero())))),
+            // mat: Arc::new(lambertian { tex: Arc::new(SolidColor::new(Vec3::zero())) }),
+            mat: Arc::new(lambertian::new_from_texture(Arc::new(SolidColor::new(Vec3::zero())))),
             u: 0.0,
             v: 0.0,
         };

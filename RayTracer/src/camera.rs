@@ -9,6 +9,7 @@ use crate::hittables::{hit_record, hittable_list, hittable};
 use crate::intervals::Interval;
 use crate::util;
 use crate::materials::{material, lambertian, metal};
+use std::sync::{Arc, Mutex};
 
 pub struct Camera {
     //basic camera settings
@@ -92,7 +93,8 @@ impl Camera {
             ProgressBar::hidden()
         } else {
             //ProgressBar::new((self.image_height * self.image_width) as u64)
-            ProgressBar::new((self.image_height) as u64)  //this is faster
+            // ProgressBar::new((self.image_height) as u64)  //this is faster?
+            ProgressBar::new(16 as u64)  //this is faster???
         };
 
 
@@ -141,16 +143,63 @@ impl Camera {
         let ray_time = util::random_f64_0_1();
         Ray::new(ray_origin, ray_dir, ray_time)
     }
-
     pub fn render(&mut self, world: &hittable_list) {
         self.initialize();
-
         let mut img: RgbImage = ImageBuffer::new(self.image_width, self.image_height);
+        let img_mtx = Arc::new(Mutex::new(&mut img));
+
+        let HEIGHT_PARTITION: u32 = 4;
+        let WIDTH_PARTITION: u32 = 4;
+        let THREAD_LIMIT: u32 = 16;
+
+        let chunk_height = (self.image_height + HEIGHT_PARTITION - 1) / HEIGHT_PARTITION;
+        let chunk_width = (self.image_width + WIDTH_PARTITION - 1) / WIDTH_PARTITION;
+
+        let camera_wrapper = Arc::new(self);
+        let world_wrapper = Arc::new(&world);
+        
+        crossbeam::thread::scope(move |thread_spawner| {
+            for i in 0..WIDTH_PARTITION {
+                for j in 0..HEIGHT_PARTITION {
+                    let camera_wrapper = Arc::clone(&camera_wrapper);
+                    let world_wrapper = Arc::clone(&world_wrapper);
+                    let img_mtx = Arc::clone(&img_mtx);
+                    let x_min = i * chunk_width;
+                    let x_max = (i + 1) * chunk_width;
+                    let y_min = j * chunk_height;
+                    let y_max = (j + 1) * chunk_height;
+                    thread_spawner.spawn(move |_| {
+                        camera_wrapper.render_sub(world, img_mtx, x_min, x_max, y_min, y_max);
+                    });
+                }
+            }
+        }).unwrap();
+
+        let path = "output/test.jpg";
+
+        println!("Ouput image as \"{}\"\n Author: {}", path, AUTHOR);
+        let output_image: image::DynamicImage = image::DynamicImage::ImageRgb8(img);
+        let mut output_file: File = File::create(path).unwrap();
+        match output_image.write_to(&mut output_file, image::ImageOutputFormat::Jpeg(100)) {
+            Ok(_) => {}
+            Err(_) => println!("Outputting image fails."),
+        }
+    }
+    
+    pub fn render_sub(&self, world: &hittable_list, img_mtx: Arc<Mutex<&mut RgbImage>>,
+                        x_min: u32, x_max: u32, y_min: u32, y_max: u32) {
         
         //Render
-        println!("WIDTH: {}, HEIGHT: {}", self.image_width, self.image_height);
-        for j in 0..self.image_height {
-            for i in 0..self.image_width {
+        // println!("WIDTH: {}, HEIGHT: {}", self.image_width, self.image_height);
+
+        //we write the colors in the buffer and then transfer them to the image to enhance performance
+        // let write_buffer : [[Vec3; y_max - y_min] ; x_max - x_min];
+        // let mut write_buffer : [[Vec3; 500 as usize] ; 500 as usize] = [[Vec3::zero(); 500 as usize]; 500 as usize];
+        //stack overflow, i will use heap by using opencv's Mat:
+        let mut write_buffer : Vec<Vec<Vec3>> = vec![vec![Vec3::zero(); (y_max - y_min) as usize]; (x_max - x_min) as usize];
+ 
+        for j in y_min..y_max {
+            for i in x_min..x_max {
                 let mut pixel_color = Vec3::zero();
 
                 for sample in 0..self.samples_per_pixel {
@@ -159,22 +208,20 @@ impl Camera {
                 }
 
                 let written_color = pixel_color * (1.0 / self.samples_per_pixel as f64);
+                write_buffer[(i - x_min) as usize][(j - y_min) as usize] = written_color;
                 // println!("Pixel color: {:?}", written_color);
-                write_color(written_color, &mut img, i as usize, j as usize);
                 // self.bar.inc(1);
             }
-            self.bar.inc(1); //this is faster
         }
-
-        let path = "output/test.jpg";
-
-        println!("Ouput image as \"{}\"\n Author: {}", path, AUTHOR);
-        let output_image: image::DynamicImage = image::DynamicImage::ImageRgb8(img);
-        let mut output_file: File = File::create(path).unwrap();
-        match output_image.write_to(&mut output_file, image::ImageOutputFormat::Jpeg(self.quality)) {
-            Ok(_) => {}
-            Err(_) => println!("Outputting image fails."),
+        let mut binding = img_mtx.lock().unwrap();
+        let img: &mut RgbImage = *binding;
+        //write the colors in the write buffer to the actual image
+        for j in 0..(y_max - y_min) {
+            for i in 0..(x_max - x_min) {
+                write_color(write_buffer[i as usize][j as usize], img, (i + x_min) as usize, (j + y_min) as usize);
+            }
         }
+        self.bar.inc(1); //this is faster?
     }
 }
 

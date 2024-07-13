@@ -1,12 +1,11 @@
 use crate::vec3::Vec3;
-use std::rc::Rc;
+use std::sync::Arc;
 use opencv::core::{MatTraitConst, VecN};
 use opencv::imgcodecs::{imread, IMREAD_COLOR};
 
-pub trait texture {
+pub trait texture : Send + Sync {
     fn value(&self, u: f64, v: f64, p: &Vec3) -> Vec3;
 }
-
 pub struct SolidColor {
     albedo: Vec3,
 }
@@ -27,12 +26,12 @@ impl texture for SolidColor {
 
 pub struct Checker {
     inv_scale: f64,
-    odd: Rc<dyn texture>,
-    even: Rc<dyn texture>,
+    odd: Arc<dyn texture + Send + Sync>,
+    even: Arc<dyn texture + Send + Sync>,
 }
 
 impl Checker {
-    pub fn new(scale: f64, even: Rc<dyn texture>, odd: Rc<dyn texture>) -> Self {
+    pub fn new(scale: f64, even: Arc<dyn texture>, odd: Arc<dyn texture>) -> Self {
         Self {
             inv_scale: 1.0 / scale,
             even,
@@ -42,8 +41,8 @@ impl Checker {
     pub fn new_from_color(scale: f64, color1: Vec3, color2: Vec3) -> Self {
         Self {
             inv_scale: 1.0 / scale,
-            even: Rc::new(SolidColor::new(color1)),
-            odd: Rc::new(SolidColor::new(color2)),
+            even: Arc::new(SolidColor::new(color1)),
+            odd: Arc::new(SolidColor::new(color2)),
         }
     }
 }
@@ -67,6 +66,9 @@ pub struct Image {
     width: u32,
     height: u32,
 }
+
+unsafe impl Send for Image {}
+unsafe impl Sync for Image {}
 
 impl Image {
     pub fn new(filename: &str) -> Self {

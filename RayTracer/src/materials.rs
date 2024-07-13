@@ -3,24 +3,24 @@ pub use crate::vec3::Vec3;
 use crate::Interval;
 use crate::util;
 use crate::hit_record;
-use std::rc::Rc;
+use std::sync::Arc;
 use crate::textures::{texture, SolidColor};
 
-pub trait material{
+pub trait material : Send + Sync {
     fn scatter(&self, r_in: &Ray, rec: &hit_record, attenuation: &mut Vec3, scattered: &mut Ray) -> bool;
 }
 
 pub struct lambertian {
-    tex: Rc<dyn texture>,
+    tex: Arc<dyn texture + Send + Sync>,
 }
 
 impl lambertian {
     pub fn new(albedo: Vec3) -> Self {
         Self {
-            tex: Rc::new(SolidColor::new(albedo)),
+            tex: Arc::new(SolidColor::new(albedo)),
         }
     }
-    pub fn new_from_texture(tex: Rc<dyn texture>) -> Self {
+    pub fn new_from_texture(tex: Arc<dyn texture + Send + Sync>) -> Self {
         Self {
             tex,
         }

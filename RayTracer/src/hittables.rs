@@ -2,18 +2,18 @@ pub use crate::ray::Ray;
 pub use crate::vec3::Vec3;
 use crate::Interval;
 use crate::materials::{material, lambertian, metal};
-use std::rc::Rc;
+use std::sync::Arc;
 use crate::aabb::AABB;
 use crate::SolidColor;
 
-pub struct hit_record {
+pub struct hit_record{
     pub p: Vec3,
     pub normal: Vec3,
     pub t: f64,
     pub front_face: bool,
 
     //material
-    pub mat: Rc<dyn material>,
+    pub mat: Arc<dyn material + Send + Sync>,
 
     //texture
     pub u: f64,
@@ -32,13 +32,13 @@ impl hit_record {
     }
 }
 
-pub trait hittable {
+pub trait hittable : Send + Sync {
     fn hit(&self, r: &Ray, ray_t: &Interval, rec: &mut hit_record) -> bool;
     fn bbox(&self) -> &AABB;
 }
 
-pub struct hittable_list {
-    pub objects: Vec<Rc<dyn hittable>>,
+pub struct hittable_list{
+    pub objects: Vec<Arc<dyn hittable  + Send + Sync>>,
     pub bbox: AABB,
 
     is_first_bbox: bool,
@@ -54,12 +54,12 @@ impl hittable_list {
             is_first_bbox: true,
         }
     }
-    pub fn new_from_object(object: Rc<dyn hittable>) -> Self {
+    pub fn new_from_object(object: Arc<dyn hittable  + Send + Sync>) -> Self {
         let mut list = Self::new();
         list.add(object);
         list
     }
-    pub fn add(&mut self, object: Rc<dyn hittable>) {
+    pub fn add(&mut self, object: Arc<dyn hittable  + Send + Sync>) {
         // if self.is_first_bbox {
         //     self.bbox = object.bbox().clone();
         //     self.is_first_bbox = false;
@@ -78,8 +78,8 @@ impl hittable for hittable_list {
             normal: Vec3::zero(),
             t: 0.0,
             front_face: false,
-            // mat: Rc::new(lambertian { tex: Rc::new(SolidColor::new(Vec3::zero())) }),
-            mat: Rc::new(lambertian::new_from_texture(Rc::new(SolidColor::new(Vec3::zero())))),
+            // mat: Arc::new(lambertian { tex: Arc::new(SolidColor::new(Vec3::zero())) }),
+            mat: Arc::new(lambertian::new_from_texture(Arc::new(SolidColor::new(Vec3::zero())))),
             u: 0.0,
             v: 0.0,
         };
@@ -96,7 +96,7 @@ impl hittable for hittable_list {
                 rec.normal = rec_temp.normal;
                 rec.t = rec_temp.t;
                 rec.front_face = rec_temp.front_face;
-                rec.mat = Rc::clone(&rec_temp.mat);
+                rec.mat = Arc::clone(&rec_temp.mat);
                 rec.u = rec_temp.u;
                 rec.v = rec_temp.v;
             }
