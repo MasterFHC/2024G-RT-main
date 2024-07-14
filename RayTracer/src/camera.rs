@@ -10,6 +10,8 @@ use crate::intervals::Interval;
 use crate::util;
 use crate::materials::{material, lambertian, metal};
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{Ordering, AtomicUsize};
+use std::sync::Condvar;
 
 pub struct Camera {
     //basic camera settings
@@ -143,24 +145,36 @@ impl Camera {
         let ray_time = util::random_f64_0_1();
         Ray::new(ray_origin, ray_dir, ray_time)
     }
+    
+    
     pub fn render(&mut self, world: &hittable_list) {
         self.initialize();
         let mut img: RgbImage = ImageBuffer::new(self.image_width, self.image_height);
         let img_mtx = Arc::new(Mutex::new(&mut img));
-
-        let HEIGHT_PARTITION: u32 = 4;
-        let WIDTH_PARTITION: u32 = 4;
+        
+        let HEIGHT_PARTITION: u32 = 20;
+        let WIDTH_PARTITION: u32 = 20;
         let THREAD_LIMIT: u32 = 16;
 
-        let chunk_height = (self.image_height + HEIGHT_PARTITION - 1) / HEIGHT_PARTITION;
-        let chunk_width = (self.image_width + WIDTH_PARTITION - 1) / WIDTH_PARTITION;
+        crossbeam::thread::scope(move |thread_spawner|{
+            let thread_count = Arc::new(AtomicUsize::new(0));
+            let thread_number_controller = Arc::new(Condvar::new());
+      
+            let chunk_height = (self.image_height + HEIGHT_PARTITION - 1) / HEIGHT_PARTITION;
+            let chunk_width = (self.image_width + WIDTH_PARTITION - 1) / WIDTH_PARTITION;
 
-        let camera_wrapper = Arc::new(self);
-        let world_wrapper = Arc::new(&world);
-        
-        crossbeam::thread::scope(move |thread_spawner| {
-            for i in 0..WIDTH_PARTITION {
-                for j in 0..HEIGHT_PARTITION {
+            let camera_wrapper = Arc::new(self);
+            let world_wrapper = Arc::new(&world);
+
+            for j in 0..HEIGHT_PARTITION {
+                for i in 0..WIDTH_PARTITION {
+                    // WAIT
+                    let thread_count = Arc::clone(&thread_count);
+                    let thread_number_controller = Arc::clone(&thread_number_controller);
+                    let lock_for_condv = Mutex::new(false);
+                    while !(thread_count.load(Ordering::SeqCst) < THREAD_LIMIT as usize) { // outstanding thread number control
+                        thread_number_controller.wait(lock_for_condv.lock().unwrap()).unwrap();
+                    }
                     let camera_wrapper = Arc::clone(&camera_wrapper);
                     let world_wrapper = Arc::clone(&world_wrapper);
                     let img_mtx = Arc::clone(&img_mtx);
@@ -168,12 +182,24 @@ impl Camera {
                     let x_max = (i + 1) * chunk_width;
                     let y_min = j * chunk_height;
                     let y_max = (j + 1) * chunk_height;
+        
+                    // move "thread_count++" out of child thread, so that it's sequential with thread number control code
+                    thread_count.fetch_add(1, Ordering::SeqCst);
+                    camera_wrapper.bar.set_message(format!("|{} threads outstanding|", thread_count.load(Ordering::SeqCst))); // set "thread_count" information to progress bar
+        
                     thread_spawner.spawn(move |_| {
+
                         camera_wrapper.render_sub(world, img_mtx, x_min, x_max, y_min, y_max);
+        
+                        thread_count.fetch_sub(1, Ordering::SeqCst); // subtract first, then notify.
+                        camera_wrapper.bar.set_message(format!("|{} threads outstanding|", thread_count.load(Ordering::SeqCst)));
+                        // NOTIFY
+                        thread_number_controller.notify_one();
                     });
+        
                 }
             }
-        }).unwrap();
+        }).unwrap();      
 
         let path = "output/test.jpg";
 
