@@ -2,6 +2,7 @@ use crate::vec3::Vec3;
 use std::sync::Arc;
 use opencv::core::{MatTraitConst, VecN};
 use opencv::imgcodecs::{imread, IMREAD_COLOR};
+use crate::perlins::perlin;
 
 pub trait texture : Send + Sync {
     fn value(&self, u: f64, v: f64, p: &Vec3) -> Vec3;
@@ -110,5 +111,26 @@ impl texture for Image {
             org_color.y * org_color.y(),
             org_color.z * org_color.z(),
         )
+    }
+}
+
+pub struct Noise {
+    noise: perlin,
+    scale: f64,
+}
+
+impl Noise {
+    pub fn new(scale: f64) -> Self {
+        Self {
+            noise: perlin::new(),
+            scale,
+        }
+    }
+}
+
+impl texture for Noise {
+    fn value(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+        // Vec3::new(1.0, 1.0, 1.0) * 0.5 * (1.0 + self.noise.noise(&(*p * self.scale)))
+        Vec3::new(0.5, 0.5, 0.5) * (1.0 + (self.scale * p.z + 10.0 * self.noise.turb(p, 7)).sin())
     }
 }

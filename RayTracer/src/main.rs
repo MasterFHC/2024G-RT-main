@@ -10,6 +10,7 @@ mod materials;
 mod aabb;
 mod bvh;
 mod textures;
+mod perlins;
 
 extern crate opencv;
 
@@ -22,7 +23,8 @@ use camera::Camera;
 use materials::{material, lambertian, metal, dielectric};
 use bvh::BVHNode;
 use std::sync::Arc;
-use textures::{Checker, SolidColor, Image};
+use textures::{Checker, SolidColor, Image, Noise};
+use perlins::perlin;
 
 fn bouncing_spheres() {
     let ASPECT_RATIO = 16.0 / 9.0 as f64;
@@ -219,9 +221,38 @@ fn baihua() {
     let world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
     cam.render(world);
 }
+fn perlin_spheres() {
+    let ASPECT_RATIO = 16.0 / 9.0 as f64;
+    let IMAGE_WIDTH = 400 as u32;
+
+    let SAMPLES_PER_PIXEL = 100 as u32;
+    let MAX_DEPTH = 50 as u32;
+    let VFOV = 20.0 as f64;
+
+    let LOOKFROM = Vec3::new(13.0, 2.0, 3.0);
+    let LOOKAT = Vec3::new(0.0, 0.0, 0.0);
+    let VUP = Vec3::new(0.0, 1.0, 0.0);
+
+    let DEFOCUS_ANGLE = 0.0;
+    let FOCUS_DIST = 10.0;
+
+    let mut world = &mut (hittable_list::new());
+
+    let pertext = Arc::new(Noise::new(4.0));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, Arc::new(lambertian::new_from_texture(pertext.clone())))));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, 2.0, 0.0), 2.0, Arc::new(lambertian::new_from_texture(pertext.clone())))));
+
+    let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
+        VFOV, LOOKFROM, LOOKAT, VUP,
+        DEFOCUS_ANGLE, FOCUS_DIST);
+
+    let mut world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
+    cam.render(world);
+}
 fn main() {
     // bouncing_spheres();
     // checkered_spheres();
     // earth();
-    baihua();
+    // baihua();
+    perlin_spheres();
 }

@@ -91,15 +91,6 @@ impl Camera {
             self.image_height = 1;
         }
 
-        self.bar = if is_ci() {
-            ProgressBar::hidden()
-        } else {
-            //ProgressBar::new((self.image_height * self.image_width) as u64)
-            // ProgressBar::new((self.image_height) as u64)  //this is faster?
-            ProgressBar::new(16 as u64)  //this is faster???
-        };
-
-
         // let focal_length = (self.lookfrom - self.lookat).length();
         let theta = self.vfov.to_radians();
         let h = f64::tan(theta / 2.0);
@@ -149,12 +140,24 @@ impl Camera {
     
     pub fn render(&mut self, world: &hittable_list) {
         self.initialize();
-        let mut img: RgbImage = ImageBuffer::new(self.image_width, self.image_height);
-        let img_mtx = Arc::new(Mutex::new(&mut img));
-        
+
         let HEIGHT_PARTITION: u32 = 20;
         let WIDTH_PARTITION: u32 = 20;
-        let THREAD_LIMIT: u32 = 16;
+        let THREAD_LIMIT: u32 = 20;
+
+        self.bar = if is_ci() {
+            ProgressBar::hidden()
+        } else {
+            //ProgressBar::new((self.image_height * self.image_width) as u64)
+            // ProgressBar::new((self.image_height) as u64)  //this is faster?
+            ProgressBar::new((HEIGHT_PARTITION * WIDTH_PARTITION) as u64)  //this is faster???
+        };
+        self.bar.set_style(indicatif::ProgressStyle::default_bar()
+            .template("{msg} {bar:40.cyan/blue} {pos:>7}/{len:7} {per_sec}"));
+        self.bar.set_message("|0 threads outstanding|");
+
+        let mut img: RgbImage = ImageBuffer::new(self.image_width, self.image_height);
+        let img_mtx = Arc::new(Mutex::new(&mut img));
 
         crossbeam::thread::scope(move |thread_spawner|{
             let thread_count = Arc::new(AtomicUsize::new(0));
@@ -244,7 +247,9 @@ impl Camera {
         //write the colors in the write buffer to the actual image
         for j in 0..(y_max - y_min) {
             for i in 0..(x_max - x_min) {
-                write_color(write_buffer[i as usize][j as usize], img, (i + x_min) as usize, (j + y_min) as usize);
+                let writex = util::fmin(self.image_width as f64 - 1.0, (i + x_min) as f64);
+                let writey = util::fmin(self.image_height as f64 - 1.0, (j + y_min) as f64);
+                write_color(write_buffer[i as usize][j as usize], img, writex as usize, writey as usize);
             }
         }
         self.bar.inc(1); //this is faster?
