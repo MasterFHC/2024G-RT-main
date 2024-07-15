@@ -18,7 +18,12 @@ impl BVHNode {
     }
     pub fn new(objects: &mut Vec<Arc<dyn hittable + Send + Sync>>, start: usize, end: usize) -> Self {
         // println!("start: {}, end: {}", start, end);
-        let axis = util::random_range_int(0, 3);
+        let mut bbox = AABB::new(Interval::new(0.0, 0.0), Interval::new(0.0, 0.0), Interval::new(0.0, 0.0));
+        for i in start..end {
+            bbox = AABB::new_from_boxes(&bbox, objects[i].bbox());
+        }
+
+        let axis = bbox.longest_axis();
 
         let object_span = end - start;
 
@@ -40,7 +45,7 @@ impl BVHNode {
             right = Arc::new(BVHNode::new(objects, mid, end));
         }
         Self {
-            bbox: AABB::new_from_boxes(&left.bbox(), &right.bbox()),
+            bbox,
             left,
             right,
         }

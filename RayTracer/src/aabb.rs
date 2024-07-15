@@ -1,6 +1,7 @@
 use crate::intervals::Interval;
 use crate::ray::Ray;
 use crate::vec3::Vec3;
+use core::ops::Add;
 
 pub struct AABB {
     pub x: Interval,
@@ -37,10 +38,10 @@ impl AABB {
         Self::pad_to_minimums(xx, yy, zz)
     }
     pub fn new_from_boxes(box0: &AABB, box1: &AABB) -> Self {
-        let x = Interval::new_from_interval(&box0.x, &box1.x);
-        let y = Interval::new_from_interval(&box0.y, &box1.y);
-        let z = Interval::new_from_interval(&box0.z, &box1.z);
-        Self { x, y, z }
+        let mut xx = Interval::new_from_interval(&box0.x, &box1.x);
+        let mut yy = Interval::new_from_interval(&box0.y, &box1.y);
+        let mut zz = Interval::new_from_interval(&box0.z, &box1.z);
+        Self::pad_to_minimums(xx, yy, zz)
     }
     pub fn axis_interval(&self, n: u8) -> &Interval {
         match n {
@@ -49,6 +50,18 @@ impl AABB {
             2 => &self.z,
             _ => panic!("Invalid axis"),
         }
+    }
+    pub fn longest_axis(&self) -> u8 {
+        let mut axis = 0;
+        let mut max_size = self.x.size();
+        if self.y.size() > max_size {
+            axis = 1;
+            max_size = self.y.size();
+        }
+        if self.z.size() > max_size {
+            axis = 2;
+        }
+        axis
     }
     fn pad_to_minimums(x: Interval, y: Interval, z: Interval) -> Self {
         let delta = 0.0001;
@@ -92,5 +105,20 @@ impl AABB {
             }
         }
         true
+    }
+}
+
+impl Add<Vec3> for &AABB {
+    type Output = AABB;
+
+    fn add(self, other: Vec3) -> AABB {
+        let x = &self.x + other.x;
+        let y = &self.y + other.y;
+        let z = &self.z + other.z;
+        AABB {
+            x,
+            y,
+            z,
+        }
     }
 }

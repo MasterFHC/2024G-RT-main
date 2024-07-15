@@ -1,4 +1,5 @@
 use crate::util;
+use core::ops::Add;
 
 pub struct Interval {
     pub tmin: f64,
@@ -41,6 +42,17 @@ impl Interval {
         Self {
             tmin: self.tmin - padding,
             tmax: self.tmax + padding,
+        }
+    }
+}
+
+impl Add<f64> for &Interval {
+    type Output = Interval;
+
+    fn add(self, other: f64) -> Interval {
+        Interval {
+            tmin: self.tmin + other,
+            tmax: self.tmax + other,
         }
     }
 }

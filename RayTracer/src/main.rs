@@ -18,7 +18,7 @@ extern crate opencv;
 use vec3::Vec3;
 use ray::Ray;
 use sphere::Sphere;
-use crate::hittables::{hit_record, hittable_list, hittable};
+use crate::hittables::{hit_record, hittable_list, hittable, translate, rotate_y, constant_medium};
 use intervals::Interval;
 use camera::Camera;
 use materials::{material, lambertian, metal, dielectric, diffuse_light};
@@ -26,7 +26,7 @@ use bvh::BVHNode;
 use std::sync::Arc;
 use textures::{Checker, SolidColor, Image, Noise};
 use perlins::perlin;
-use quads::quad;
+use quads::{quad, newbox};
 
 fn bouncing_spheres() {
     let ASPECT_RATIO = 16.0 / 9.0 as f64;
@@ -373,6 +373,156 @@ fn cornell_box() {
     world.add(Arc::new(quad::new(Vec3::new(555.0, 555.0, 555.0), Vec3::new(-555.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -555.0), white.clone())));
     world.add(Arc::new(quad::new(Vec3::new(0.0, 0.0, 555.0), Vec3::new(555.0, 0.0, 0.0), Vec3::new(0.0, 555.0, 0.0), white.clone())));
 
+    let mut box1 = newbox(Vec3::new(0.0, 0.0, 0.0), Vec3::new(165.0, 330.0, 165.0), white.clone());
+    let mut box2 = newbox(Vec3::new(0.0, 0.0, 0.0), Vec3::new(165.0, 165.0, 165.0), white.clone());
+
+    let mut box1 = rotate_y::new(Arc::new(box1), 15.0);
+    let mut box2 = rotate_y::new(Arc::new(box2), -18.0);
+
+    let mut box1 = translate::new(Arc::new(box1), Vec3::new(265.0, 0.0, 295.0));
+    let mut box2 = translate::new(Arc::new(box2), Vec3::new(130.0, 0.0, 65.0));
+
+    world.add(Arc::new(box1));
+    world.add(Arc::new(box2));
+
+    let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
+        VFOV, LOOKFROM, LOOKAT, VUP,
+        DEFOCUS_ANGLE, FOCUS_DIST,
+        BACKGROUND);
+
+    let mut world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
+    cam.render(world);
+}
+fn cornell_smoke() {
+    let ASPECT_RATIO = 1.0 as f64;
+    let IMAGE_WIDTH = 600 as u32;
+
+    let SAMPLES_PER_PIXEL = 200 as u32;
+    let MAX_DEPTH = 50 as u32;
+    let VFOV = 40.0 as f64;
+
+    let LOOKFROM = Vec3::new(278.0, 278.0, -800.0);
+    let LOOKAT = Vec3::new(278.0, 278.0, 0.0);
+    let VUP = Vec3::new(0.0, 1.0, 0.0);
+
+    let DEFOCUS_ANGLE = 0.0;
+    let FOCUS_DIST = 10.0;
+
+    let BACKGROUND = Vec3::new(0.0, 0.0, 0.0);
+
+    let mut world = &mut (hittable_list::new());
+
+    let red = Arc::new(lambertian::new(Vec3::new(0.65, 0.05, 0.05)));
+    let white = Arc::new(lambertian::new(Vec3::new(0.73, 0.73, 0.73)));
+    let green = Arc::new(lambertian::new(Vec3::new(0.12, 0.45, 0.15)));
+    let light = Arc::new(diffuse_light::new_from_color(Vec3::new(7.0, 7.0, 7.0)));
+
+    //The Cornell Box
+    world.add(Arc::new(quad::new(Vec3::new(555.0, 0.0, 0.0), Vec3::new(0.0, 555.0, 0.0), Vec3::new(0.0, 0.0, 555.0), green.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 555.0, 0.0), Vec3::new(0.0, 0.0, 555.0), red.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(113.0, 554.0, 127.0), Vec3::new(330.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 305.0), light.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(555.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 555.0), white.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(555.0, 555.0, 555.0), Vec3::new(-555.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -555.0), white.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(0.0, 0.0, 555.0), Vec3::new(555.0, 0.0, 0.0), Vec3::new(0.0, 555.0, 0.0), white.clone())));
+
+    let mut box1 = newbox(Vec3::new(0.0, 0.0, 0.0), Vec3::new(165.0, 330.0, 165.0), white.clone());
+    let mut box2 = newbox(Vec3::new(0.0, 0.0, 0.0), Vec3::new(165.0, 165.0, 165.0), white.clone());
+
+    let mut box1 = rotate_y::new(Arc::new(box1), 15.0);
+    let mut box2 = rotate_y::new(Arc::new(box2), -18.0);
+
+    let mut box1 = translate::new(Arc::new(box1), Vec3::new(265.0, 0.0, 295.0));
+    let mut box2 = translate::new(Arc::new(box2), Vec3::new(130.0, 0.0, 65.0));
+
+    world.add(Arc::new(constant_medium::new(Arc::new(box1), 0.01, Vec3::new(0.0, 0.0, 0.0))));
+    world.add(Arc::new(constant_medium::new(Arc::new(box2), 0.01, Vec3::new(1.0, 1.0, 1.0))));
+
+    let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
+        VFOV, LOOKFROM, LOOKAT, VUP,
+        DEFOCUS_ANGLE, FOCUS_DIST,
+        BACKGROUND);
+
+    let mut world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
+    cam.render(world);
+}
+fn final_scene(image_width: u32, samples_per_pixel: u32, max_depth: u32) {
+    let ASPECT_RATIO = 1.0 as f64;
+    let IMAGE_WIDTH = image_width as u32;
+
+    let SAMPLES_PER_PIXEL = samples_per_pixel as u32;
+    let MAX_DEPTH = max_depth as u32;
+    let VFOV = 40.0 as f64;
+
+    let LOOKFROM = Vec3::new(478.0, 278.0, -600.0);
+    let LOOKAT = Vec3::new(278.0, 278.0, 0.0);
+    let VUP = Vec3::new(0.0, 1.0, 0.0);
+
+    let DEFOCUS_ANGLE = 0.0;
+    let FOCUS_DIST = 10.0;
+
+    let BACKGROUND = Vec3::new(0.0, 0.0, 0.0);
+
+    let mut world = &mut (hittable_list::new());
+
+    let mut boxes1 = &mut (hittable_list::new());
+    let ground = Arc::new(lambertian::new(Vec3::new(0.48, 0.83, 0.53)));
+
+    let BOXES_PER_SIDE = 20;
+    for i in 0..BOXES_PER_SIDE {
+        for j in 0..BOXES_PER_SIDE {
+            let w = 100.0;
+            let x0 = -1000.0 + i as f64 * w;
+            let z0 = -1000.0 + j as f64 * w;
+            let y0 = 0.0;
+            let x1 = x0 + w;
+            let y1 = util::random_range(1.0, 101.0);
+            let z1 = z0 + w;
+
+            boxes1.add(Arc::new(newbox(Vec3::new(x0, y0, z0), Vec3::new(x1, y1, z1), ground.clone())));
+        }
+    }
+
+    world.add(Arc::new(BVHNode::new_from_list(boxes1)));
+
+    let light = Arc::new(diffuse_light::new_from_color(Vec3::new(7.0, 7.0, 7.0)));
+    world.add(Arc::new(quad::new(Vec3::new(123.0, 554.0, 147.0), Vec3::new(300.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 265.0), light.clone())));
+
+    let center1 = Vec3::new(400.0, 400.0, 200.0);
+    let center2 = center1 + Vec3::new(30.0, 0.0, 0.0);
+    let moving_sphere_material = Arc::new(lambertian::new(Vec3::new(0.7, 0.3, 0.1)));
+    world.add(Arc::new(Sphere::new_moving(center1, center2, 50.0, moving_sphere_material.clone())));
+
+    world.add(Arc::new(Sphere::new(Vec3::new(260.0, 150.0, 45.0), 50.0, Arc::new(dielectric::new(1.5)))));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, 150.0, 145.0), 50.0, Arc::new(metal::new(Vec3::new(0.8, 0.8, 0.9), 1.0)))));
+
+    let boundary = Arc::new(Sphere::new(Vec3::new(360.0, 150.0, 145.0), 70.0, Arc::new(dielectric::new(1.5))));
+    world.add(boundary.clone());
+    world.add(Arc::new(constant_medium::new(boundary.clone(), 0.2, Vec3::new(0.2, 0.4, 0.9))));
+    let boundary = Arc::new(Sphere::new(Vec3::new(0.0, 0.0, 0.0), 5000.0, Arc::new(dielectric::new(1.5))));
+    world.add(Arc::new(constant_medium::new(boundary.clone(), 0.0001, Vec3::new(1.0, 1.0, 1.0))));
+
+    //NOW MAKE A EARTH
+    let earth_texture = Arc::new(Image::new("earthmap.jpg"));
+    let earth_surface = Arc::new(lambertian::new_from_texture(earth_texture.clone()));
+    world.add(Arc::new(Sphere::new(Vec3::new(400.0, 200.0, 400.0), 100.0, earth_surface.clone())));
+    let pertext = Arc::new(Noise::new(0.2));
+    world.add(Arc::new(Sphere::new(Vec3::new(220.0, 280.0, 300.0), 80.0, Arc::new(lambertian::new_from_texture(pertext.clone())))));
+
+    let mut boxes2 = &mut (hittable_list::new());
+    let white = Arc::new(lambertian::new(Vec3::new(0.73, 0.73, 0.73)));
+    let ns = 1000;
+    for i in 0..ns {
+        boxes2.add(Arc::new(Sphere::new(Vec3::new(util::random_range_int(0, 165) as f64, 
+                        util::random_range_int(0, 165) as f64, util::random_range_int(0, 165) as f64), 10.0, white.clone())));
+    }
+
+    world.add(Arc::new(translate::new(
+                Arc::new(rotate_y::new(
+                    Arc::new(BVHNode::new_from_list(boxes2)), 15.0
+                )), Vec3::new(-100.0, 270.0, 395.0)
+            )
+        ));
+
     let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
         VFOV, LOOKFROM, LOOKAT, VUP,
         DEFOCUS_ANGLE, FOCUS_DIST,
@@ -390,5 +540,7 @@ fn main() {
     // perlin_spheres();
     // quads();
     // simple_light();
-    cornell_box();
+    // cornell_box();
+    // cornell_smoke();
+    final_scene(800, 5000, 40);
 }

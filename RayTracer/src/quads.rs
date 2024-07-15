@@ -1,7 +1,7 @@
 pub use crate::ray::Ray;
 use crate::Vec3;
 use crate::util;
-pub use crate::hittables::{hit_record, hittable};
+pub use crate::hittables::{hit_record, hittable, hittable_list};
 use crate::materials::{material};
 use crate::Interval;
 use std::sync::Arc;
@@ -29,9 +29,7 @@ impl quad {
         let D = normal * Q;
         let w = n * (1.0 / (n * n));
         let new_bbox = Self::set_bbox(Q, u, v);
-        // println!("quad bbox: [{},{}] [{},{}] [{},{}]", new_bbox.x.tmin as f64, new_bbox.x.tmax as f64, 
-        //                                                new_bbox.y.tmin as f64, new_bbox.y.tmax as f64, 
-        //                                                new_bbox.z.tmin as f64, new_bbox.z.tmax as f64);
+        // println!("quad bbox: [{}, {}], [{}, {}], [{}, {}]", new_bbox.x.tmin, new_bbox.x.tmax, new_bbox.y.tmin, new_bbox.y.tmax, new_bbox.z.tmin, new_bbox.z.tmax);
         Self {
             Q,
             u,
@@ -102,4 +100,29 @@ impl hittable for quad {
     fn bbox(&self) -> &AABB {
         &self.bbox
     }
+}
+
+pub fn newbox(a: Vec3, b: Vec3, mat: Arc<dyn material + Send + Sync>) -> hittable_list {
+    // println!("newbox");
+    //Returns the 3D box (six sides) that contains the two opposite vertices a & b
+    let mut sides = hittable_list::new();
+
+    // Construct the two opposite vertices with the minimum and maximum coordinates.
+    let min = Vec3::new(util::fmin(a.x, b.x), util::fmin(a.y, b.y), util::fmin(a.z, b.z));
+    let max = Vec3::new(util::fmax(a.x, b.x), util::fmax(a.y, b.y), util::fmax(a.z, b.z));
+
+    let dx = Vec3::new(max.x - min.x, 0.0, 0.0);
+    let dy = Vec3::new(0.0, max.y - min.y, 0.0);
+    let dz = Vec3::new(0.0, 0.0, max.z - min.z);
+
+    sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, max.z), dx, dy, mat.clone())));//front
+    sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, max.z), dz * (-1.0), dy, mat.clone())));//right
+    sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, min.z), dx * (-1.0), dy, mat.clone())));//back
+    sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dz, dy, mat.clone())));//left
+    sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), mat.clone())));//top
+    sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dx, dz, mat.clone())));//bottom
+
+    println!("bbox of box: [{}, {}], [{}, {}], [{}, {}]", sides.bbox.x.tmin, sides.bbox.x.tmax, sides.bbox.y.tmin, sides.bbox.y.tmax, sides.bbox.z.tmin, sides.bbox.z.tmax);
+
+    sides
 }
