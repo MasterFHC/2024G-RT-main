@@ -48,9 +48,9 @@ impl hittable_list {
     pub fn new() -> Self {
         Self {
             objects: Vec::new(),
-            bbox: AABB::new(Interval::new(f64::INFINITY, f64::INFINITY), 
-                            Interval::new(f64::INFINITY, f64::INFINITY), 
-                            Interval::new(f64::INFINITY, f64::INFINITY)),
+            bbox: AABB::new(Interval::new(0.0, 0.0), 
+                            Interval::new(0.0, 0.0), 
+                            Interval::new(0.0, 0.0)),
             is_first_bbox: true,
         }
     }

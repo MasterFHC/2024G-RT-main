@@ -12,6 +12,7 @@ use crate::materials::{material, lambertian, metal};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{Ordering, AtomicUsize};
 use std::sync::Condvar;
+use crate::SolidColor;
 
 pub struct Camera {
     //basic camera settings
@@ -45,12 +46,16 @@ pub struct Camera {
     pub focus_dist: f64,
     defocus_disk_u: Vec3,
     defocus_disk_v: Vec3,
+
+    //background color
+    pub background: Vec3,
 }
 
 impl Camera {
     pub fn new(aspect_ratio: f64, image_width: u32, quality: u8, samples_per_pixel: u32, max_depth: u32, 
             vfov: f64, lookfrom: Vec3, lookat: Vec3, vup: Vec3,
-            defocus_angle: f64, focus_dist: f64) -> Self {
+            defocus_angle: f64, focus_dist: f64,
+            background: Vec3) -> Self {
         Self {
             aspect_ratio,
             image_width,
@@ -82,6 +87,9 @@ impl Camera {
             focus_dist,
             defocus_disk_u: Vec3::zero(),
             defocus_disk_v: Vec3::zero(),
+
+            //background color
+            background,
         }
     }
     fn initialize(&mut self) {
@@ -144,6 +152,7 @@ impl Camera {
         let HEIGHT_PARTITION: u32 = 20;
         let WIDTH_PARTITION: u32 = 20;
         let THREAD_LIMIT: u32 = 20;
+        // let THREAD_LIMIT: u32 = 1;
 
         self.bar = if is_ci() {
             ProgressBar::hidden()
@@ -215,6 +224,7 @@ impl Camera {
         }
     }
     
+
     pub fn render_sub(&self, world: &hittable_list, img_mtx: Arc<Mutex<&mut RgbImage>>,
                         x_min: u32, x_max: u32, y_min: u32, y_max: u32) {
         
@@ -233,7 +243,7 @@ impl Camera {
 
                 for sample in 0..self.samples_per_pixel {
                     let ray = self.get_ray(i as f64, j as f64);
-                    pixel_color += ray.ray_color(world, self.max_depth);
+                    pixel_color += self.ray_color(&ray, world, self.max_depth);
                 }
 
                 let written_color = pixel_color * (1.0 / self.samples_per_pixel as f64);
@@ -253,6 +263,42 @@ impl Camera {
             }
         }
         self.bar.inc(1); //this is faster?
+    }
+
+    pub fn ray_color(&self, r: &Ray, world: &dyn hittable, depth: u32) -> Vec3 {
+        if depth <= 0 {
+            return Vec3::zero();
+        }
+        let mut rec: hit_record = hit_record {
+            p: Vec3::zero(),
+            normal: Vec3::zero(),
+            t: 0.0,
+            front_face: false,
+            // mat: Arc::new(lambertian { tex: Arc::new(SolidColor::new(Vec3::zero())) }),
+            mat: Arc::new(lambertian::new_from_texture(Arc::new(SolidColor::new(Vec3::zero())))),
+            u: 0.0,
+            v: 0.0,
+        };
+
+        if !world.hit(r, &mut Interval::new(0.001, f64::INFINITY), &mut rec) {
+            return self.background;
+        }
+        let mut scattered = Ray::new(Vec3::zero(), Vec3::zero(), 0.0);
+        let mut attenuation = Vec3::new(1.0, 1.0, 1.0);
+        let color_from_emission = rec.mat.emitted(rec.u, rec.v, &rec.p);
+        let mut color_from_scatter = Vec3::zero();
+        
+        if !rec.mat.scatter(r, &rec, &mut attenuation, &mut scattered) {
+            return color_from_emission;
+        }
+        let new_ray_color = self.ray_color(&scattered, world, depth - 1);
+        color_from_scatter =  Vec3::new(
+            attenuation.x * new_ray_color.x,
+            attenuation.y * new_ray_color.y,
+            attenuation.z * new_ray_color.z,
+        );
+        
+        color_from_emission + color_from_scatter
     }
 }
 

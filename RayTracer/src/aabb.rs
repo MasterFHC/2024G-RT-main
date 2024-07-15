@@ -10,7 +10,10 @@ pub struct AABB {
 
 impl AABB {
     pub fn new(x: Interval, y: Interval, z: Interval) -> Self {
-        Self { x, y, z }
+        let mut xx = x;
+        let mut yy = y;
+        let mut zz = z;
+        Self::pad_to_minimums(xx, yy, zz)
     }
     pub fn new_from_points(p0: Vec3, p1: Vec3) -> Self {
         let x = if p0.x < p1.x {
@@ -28,7 +31,10 @@ impl AABB {
         } else {
             Interval::new(p1.z, p0.z)
         };
-        Self { x, y, z }
+        let mut xx = x;
+        let mut yy = y;
+        let mut zz = z;
+        Self::pad_to_minimums(xx, yy, zz)
     }
     pub fn new_from_boxes(box0: &AABB, box1: &AABB) -> Self {
         let x = Interval::new_from_interval(&box0.x, &box1.x);
@@ -36,7 +42,6 @@ impl AABB {
         let z = Interval::new_from_interval(&box0.z, &box1.z);
         Self { x, y, z }
     }
-
     pub fn axis_interval(&self, n: u8) -> &Interval {
         match n {
             0 => &self.x,
@@ -44,6 +49,13 @@ impl AABB {
             2 => &self.z,
             _ => panic!("Invalid axis"),
         }
+    }
+    fn pad_to_minimums(x: Interval, y: Interval, z: Interval) -> Self {
+        let delta = 0.0001;
+        let x = if x.size() < delta { x.expand(delta) } else { x };
+        let y = if y.size() < delta { y.expand(delta) } else { y };
+        let z = if z.size() < delta { z.expand(delta) } else { z };
+        Self {x, y, z}
     }
 
     pub fn hit(&self, r: &Ray, org_ray_t: &Interval) -> bool{

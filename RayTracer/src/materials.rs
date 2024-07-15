@@ -8,6 +8,7 @@ use crate::textures::{texture, SolidColor};
 
 pub trait material : Send + Sync {
     fn scatter(&self, r_in: &Ray, rec: &hit_record, attenuation: &mut Vec3, scattered: &mut Ray) -> bool;
+    fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Vec3;
 }
 
 pub struct lambertian {
@@ -37,6 +38,9 @@ impl material for lambertian {
         *attenuation = self.tex.value(rec.u, rec.v, &rec.p);
         true
     }
+    fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+        Vec3::zero()
+    }
 }
 
 pub struct metal {
@@ -60,6 +64,9 @@ impl material for metal {
         *scattered = Ray::new(rec.p, reflected, r_in.time);
         *attenuation = self.albedo;
         scattered.b_direction * rec.normal > 0.0
+    }
+    fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+        Vec3::zero()
     }
 }
 
@@ -95,5 +102,34 @@ impl material for dielectric {
         };
         *scattered = Ray::new(rec.p, refracted, r_in.time);
         true
+    }
+    fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+        Vec3::zero()
+    }
+}
+
+pub struct diffuse_light {
+    pub tex: Arc<dyn texture + Send + Sync>,
+}
+
+impl diffuse_light {
+    pub fn new(tex: Arc<dyn texture + Send + Sync>) -> Self {
+        Self {
+            tex,
+        }
+    }
+    pub fn new_from_color(color: Vec3) -> Self {
+        Self {
+            tex: Arc::new(SolidColor::new(color)),
+        }
+    }
+}
+
+impl material for diffuse_light {
+    fn scatter(&self, r_in: &Ray, rec: &hit_record, attenuation: &mut Vec3, scattered: &mut Ray) -> bool {
+        false
+    }
+    fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+        self.tex.value(u, v, p)
     }
 }

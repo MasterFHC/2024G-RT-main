@@ -11,6 +11,7 @@ mod aabb;
 mod bvh;
 mod textures;
 mod perlins;
+mod quads;
 
 extern crate opencv;
 
@@ -20,11 +21,12 @@ use sphere::Sphere;
 use crate::hittables::{hit_record, hittable_list, hittable};
 use intervals::Interval;
 use camera::Camera;
-use materials::{material, lambertian, metal, dielectric};
+use materials::{material, lambertian, metal, dielectric, diffuse_light};
 use bvh::BVHNode;
 use std::sync::Arc;
 use textures::{Checker, SolidColor, Image, Noise};
 use perlins::perlin;
+use quads::quad;
 
 fn bouncing_spheres() {
     let ASPECT_RATIO = 16.0 / 9.0 as f64;
@@ -40,6 +42,8 @@ fn bouncing_spheres() {
 
     let DEFOCUS_ANGLE = 0.6;
     let FOCUS_DIST = 10.0;
+
+    let BACKGROUND = Vec3::new(0.7, 0.8, 1.0);
 
     let mut world = &mut (hittable_list::new());
 
@@ -90,7 +94,8 @@ fn bouncing_spheres() {
 
     let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
                                         VFOV, LOOKFROM, LOOKAT, VUP,
-                                        DEFOCUS_ANGLE, FOCUS_DIST);
+                                        DEFOCUS_ANGLE, FOCUS_DIST,
+                                        BACKGROUND);
 
     let mut world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
     cam.render(world);
@@ -110,6 +115,8 @@ fn checkered_spheres() {
     let DEFOCUS_ANGLE = 0.0;
     let FOCUS_DIST = 10.0;
 
+    let BACKGROUND = Vec3::new(0.7, 0.8, 1.0);
+
     let mut world = &mut (hittable_list::new());
 
     let checker = Arc::new(Checker::new_from_color(0.32, Vec3::new(0.2, 0.3, 0.1), Vec3::new(0.9, 0.9, 0.9)));
@@ -118,7 +125,8 @@ fn checkered_spheres() {
 
     let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
         VFOV, LOOKFROM, LOOKAT, VUP,
-        DEFOCUS_ANGLE, FOCUS_DIST);
+        DEFOCUS_ANGLE, FOCUS_DIST,
+        BACKGROUND);
 
     let mut world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
     cam.render(world);
@@ -138,6 +146,8 @@ fn earth() {
     let DEFOCUS_ANGLE = 0.0;
     let FOCUS_DIST = 10.0;
 
+    let BACKGROUND = Vec3::new(0.7, 0.8, 1.0);
+
     let mut world = &mut (hittable_list::new());
 
     let earth_texture = Arc::new(Image::new("double_baihua.png"));
@@ -146,7 +156,8 @@ fn earth() {
 
     let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
         VFOV, LOOKFROM, LOOKAT, VUP,
-        DEFOCUS_ANGLE, FOCUS_DIST);
+        DEFOCUS_ANGLE, FOCUS_DIST,
+        BACKGROUND);
 
     let mut world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
     cam.render(world);
@@ -165,6 +176,8 @@ fn baihua() {
 
     let DEFOCUS_ANGLE = 0.6;
     let FOCUS_DIST = 10.0;
+
+    let BACKGROUND = Vec3::new(0.7, 0.8, 1.0);
 
     let mut world = &mut (hittable_list::new());
 
@@ -216,7 +229,8 @@ fn baihua() {
 
     let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
                                         VFOV, LOOKFROM, LOOKAT, VUP,
-                                        DEFOCUS_ANGLE, FOCUS_DIST);
+                                        DEFOCUS_ANGLE, FOCUS_DIST,
+                                        BACKGROUND);
 
     let world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
     cam.render(world);
@@ -236,6 +250,8 @@ fn perlin_spheres() {
     let DEFOCUS_ANGLE = 0.0;
     let FOCUS_DIST = 10.0;
 
+    let BACKGROUND = Vec3::new(0.7, 0.8, 1.0);
+
     let mut world = &mut (hittable_list::new());
 
     let pertext = Arc::new(Noise::new(4.0));
@@ -244,15 +260,135 @@ fn perlin_spheres() {
 
     let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
         VFOV, LOOKFROM, LOOKAT, VUP,
-        DEFOCUS_ANGLE, FOCUS_DIST);
+        DEFOCUS_ANGLE, FOCUS_DIST,
+        BACKGROUND);
 
     let mut world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
     cam.render(world);
 }
+fn quads() {
+    let ASPECT_RATIO = 1.0 as f64;
+    let IMAGE_WIDTH = 400 as u32;
+
+    let SAMPLES_PER_PIXEL = 100 as u32;
+    let MAX_DEPTH = 50 as u32;
+    let VFOV = 80.0 as f64;
+
+    let LOOKFROM = Vec3::new(0.0, 0.0, 9.0);
+    let LOOKAT = Vec3::new(0.0, 0.0, 0.0);
+    let VUP = Vec3::new(0.0, 1.0, 0.0);
+
+    let DEFOCUS_ANGLE = 0.0;
+    let FOCUS_DIST = 10.0;
+
+    let BACKGROUND = Vec3::new(0.7, 0.8, 1.0);
+
+    let mut world = &mut (hittable_list::new());
+
+    let left_red = Arc::new(lambertian::new(Vec3::new(1.0, 0.2, 0.2)));
+    let back_green = Arc::new(lambertian::new(Vec3::new(0.2, 1.0, 0.2)));
+    let right_blue = Arc::new(lambertian::new(Vec3::new(0.2, 0.2, 1.0)));
+    let upper_orange = Arc::new(lambertian::new(Vec3::new(1.0, 0.5, 0.0)));
+    let lower_teal = Arc::new(lambertian::new(Vec3::new(0.2, 0.8, 0.8)));
+
+    let sphere_material = Arc::new(dielectric::new(1.5));
+    
+    world.add(Arc::new(quad::new(Vec3::new(-3.0, -2.0, 5.0), Vec3::new(0.0, 0.0, -4.0), Vec3::new(0.0, 4.0, 0.0), left_red)));
+    world.add(Arc::new(quad::new(Vec3::new(-2.0, -2.0, 0.0), Vec3::new(4.0, 0.0, 0.0), Vec3::new(0.0, 4.0, 0.0), back_green)));
+    world.add(Arc::new(quad::new(Vec3::new(3.0, -2.0, 1.0), Vec3::new(0.0, 0.0, 4.0), Vec3::new(0.0, 4.0, 0.0), right_blue)));
+    world.add(Arc::new(quad::new(Vec3::new(-2.0, 3.0, 1.0), Vec3::new(4.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 4.0), upper_orange)));
+    world.add(Arc::new(quad::new(Vec3::new(-2.0, -3.0, 5.0), Vec3::new(4.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -4.0), lower_teal)));
+
+    let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
+        VFOV, LOOKFROM, LOOKAT, VUP,
+        DEFOCUS_ANGLE, FOCUS_DIST,
+        BACKGROUND);
+
+    let mut world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
+    cam.render(world);
+}
+fn simple_light() {
+    let ASPECT_RATIO = 16.0 / 9.0 as f64;
+    let IMAGE_WIDTH = 400 as u32;
+
+    let SAMPLES_PER_PIXEL = 100 as u32;
+    let MAX_DEPTH = 50 as u32;
+    let VFOV = 20.0 as f64;
+
+    let LOOKFROM = Vec3::new(26.0, 3.0, 6.0);
+    let LOOKAT = Vec3::new(0.0, 2.0, 0.0);
+    let VUP = Vec3::new(0.0, 1.0, 0.0);
+
+    let DEFOCUS_ANGLE = 0.0;
+    let FOCUS_DIST = 10.0;
+
+    let BACKGROUND = Vec3::new(0.0, 0.0, 0.0);
+
+    let mut world = &mut (hittable_list::new());
+
+    let pertext = Arc::new(Noise::new(4.0)); 
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, Arc::new(lambertian::new_from_texture(pertext.clone())))));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, 2.0, 0.0), 2.0, Arc::new(lambertian::new_from_texture(pertext.clone())))));
+    
+    let difflight = Arc::new(diffuse_light::new_from_color(Vec3::new(4.0, 4.0, 4.0)));
+    world.add(Arc::new(Sphere::new(Vec3::new(0.0, 7.0, 0.0), 2.0, difflight.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(3.0, 1.0, -2.0), Vec3::new(2.0, 0.0, 0.0), Vec3::new(0.0, 2.0, 0.0), difflight.clone())));
+
+    let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
+        VFOV, LOOKFROM, LOOKAT, VUP,
+        DEFOCUS_ANGLE, FOCUS_DIST,
+        BACKGROUND);
+
+    let mut world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
+    cam.render(world);
+}
+fn cornell_box() {
+    let ASPECT_RATIO = 1.0 as f64;
+    let IMAGE_WIDTH = 600 as u32;
+
+    let SAMPLES_PER_PIXEL = 200 as u32;
+    let MAX_DEPTH = 50 as u32;
+    let VFOV = 40.0 as f64;
+
+    let LOOKFROM = Vec3::new(278.0, 278.0, -800.0);
+    let LOOKAT = Vec3::new(278.0, 278.0, 0.0);
+    let VUP = Vec3::new(0.0, 1.0, 0.0);
+
+    let DEFOCUS_ANGLE = 0.0;
+    let FOCUS_DIST = 10.0;
+
+    let BACKGROUND = Vec3::new(0.0, 0.0, 0.0);
+
+    let mut world = &mut (hittable_list::new());
+
+    let red = Arc::new(lambertian::new(Vec3::new(0.65, 0.05, 0.05)));
+    let white = Arc::new(lambertian::new(Vec3::new(0.73, 0.73, 0.73)));
+    let green = Arc::new(lambertian::new(Vec3::new(0.12, 0.45, 0.15)));
+    let light = Arc::new(diffuse_light::new_from_color(Vec3::new(15.0, 15.0, 15.0)));
+
+    world.add(Arc::new(quad::new(Vec3::new(555.0, 0.0, 0.0), Vec3::new(0.0, 555.0, 0.0), Vec3::new(0.0, 0.0, 555.0), green.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 555.0, 0.0), Vec3::new(0.0, 0.0, 555.0), red.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(343.0, 554.0, 332.0), Vec3::new(-130.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -105.0), light.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(555.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 555.0), white.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(555.0, 555.0, 555.0), Vec3::new(-555.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -555.0), white.clone())));
+    world.add(Arc::new(quad::new(Vec3::new(0.0, 0.0, 555.0), Vec3::new(555.0, 0.0, 0.0), Vec3::new(0.0, 555.0, 0.0), white.clone())));
+
+    let mut cam: Camera = Camera::new(ASPECT_RATIO, IMAGE_WIDTH, 100 as u8, SAMPLES_PER_PIXEL, MAX_DEPTH, 
+        VFOV, LOOKFROM, LOOKAT, VUP,
+        DEFOCUS_ANGLE, FOCUS_DIST,
+        BACKGROUND);
+
+    let mut world = &mut (hittable_list::new_from_object(Arc::new(BVHNode::new_from_list(world))));
+    cam.render(world);
+}
+
 fn main() {
     // bouncing_spheres();
     // checkered_spheres();
     // earth();
     // baihua();
-    perlin_spheres();
+    // perlin_spheres();
+    // quads();
+    // simple_light();
+    cornell_box();
 }
