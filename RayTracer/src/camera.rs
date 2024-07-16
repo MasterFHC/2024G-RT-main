@@ -149,8 +149,8 @@ impl Camera {
     pub fn render(&mut self, world: &hittable_list) {
         self.initialize();
 
-        let HEIGHT_PARTITION: u32 = 20;
-        let WIDTH_PARTITION: u32 = 20;
+        let HEIGHT_PARTITION: u32 = 40;
+        let WIDTH_PARTITION: u32 = 40;
         let THREAD_LIMIT: u32 = 20;
         // let THREAD_LIMIT: u32 = 1;
 

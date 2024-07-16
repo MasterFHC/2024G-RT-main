@@ -21,7 +21,7 @@ use sphere::Sphere;
 use crate::hittables::{hit_record, hittable_list, hittable, translate, rotate_y, constant_medium};
 use intervals::Interval;
 use camera::Camera;
-use materials::{material, lambertian, metal, dielectric, diffuse_light};
+use materials::{material, lambertian, metal, dielectric, diffuse_light, isotropic};
 use bvh::BVHNode;
 use std::sync::Arc;
 use textures::{Checker, SolidColor, Image, Noise};
@@ -487,6 +487,10 @@ fn final_scene(image_width: u32, samples_per_pixel: u32, max_depth: u32) {
     let light = Arc::new(diffuse_light::new_from_color(Vec3::new(7.0, 7.0, 7.0)));
     world.add(Arc::new(quad::new(Vec3::new(123.0, 554.0, 147.0), Vec3::new(300.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 265.0), light.clone())));
 
+    let ljn_texture = Arc::new(Image::new("ljn_red.png"));
+    let ljn_surface = Arc::new(isotropic::new_from_texture(ljn_texture.clone()));
+    world.add(Arc::new(quad::new(Vec3::new(123.0, 544.0, 147.0), Vec3::new(300.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 265.0), ljn_surface.clone())));
+
     let center1 = Vec3::new(400.0, 400.0, 200.0);
     let center2 = center1 + Vec3::new(30.0, 0.0, 0.0);
     let moving_sphere_material = Arc::new(lambertian::new(Vec3::new(0.7, 0.3, 0.1)));
@@ -497,12 +501,13 @@ fn final_scene(image_width: u32, samples_per_pixel: u32, max_depth: u32) {
 
     let boundary = Arc::new(Sphere::new(Vec3::new(360.0, 150.0, 145.0), 70.0, Arc::new(dielectric::new(1.5))));
     world.add(boundary.clone());
-    world.add(Arc::new(constant_medium::new(boundary.clone(), 0.2, Vec3::new(0.2, 0.4, 0.9))));
+    // world.add(Arc::new(constant_medium::new(boundary.clone(), 0.2, Vec3::new(0.2, 0.4, 0.9))));
+    world.add(Arc::new(Sphere::new(Vec3::new(360.0, 150.0, 145.0), 60.0, light.clone())));
     let boundary = Arc::new(Sphere::new(Vec3::new(0.0, 0.0, 0.0), 5000.0, Arc::new(dielectric::new(1.5))));
     world.add(Arc::new(constant_medium::new(boundary.clone(), 0.0001, Vec3::new(1.0, 1.0, 1.0))));
 
     //NOW MAKE A EARTH
-    let earth_texture = Arc::new(Image::new("earthmap.jpg"));
+    let earth_texture = Arc::new(Image::new("double_baihua_aligned.png"));
     let earth_surface = Arc::new(lambertian::new_from_texture(earth_texture.clone()));
     world.add(Arc::new(Sphere::new(Vec3::new(400.0, 200.0, 400.0), 100.0, earth_surface.clone())));
     let pertext = Arc::new(Noise::new(0.2));
@@ -543,4 +548,5 @@ fn main() {
     // cornell_box();
     // cornell_smoke();
     final_scene(800, 5000, 40);
+    // final_scene(200, 50, 40)
 }

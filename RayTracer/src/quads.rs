@@ -2,7 +2,8 @@ pub use crate::ray::Ray;
 use crate::Vec3;
 use crate::util;
 pub use crate::hittables::{hit_record, hittable, hittable_list};
-use crate::materials::{material};
+use crate::materials::{material, lambertian};
+use crate::textures::{Image};
 use crate::Interval;
 use std::sync::Arc;
 use crate::aabb::AABB;
@@ -115,14 +116,18 @@ pub fn newbox(a: Vec3, b: Vec3, mat: Arc<dyn material + Send + Sync>) -> hittabl
     let dy = Vec3::new(0.0, max.y - min.y, 0.0);
     let dz = Vec3::new(0.0, 0.0, max.z - min.z);
 
+    let wsh_texture = Arc::new(Image::new("wsh_light.png"));
+    let wsh_surface = Arc::new(lambertian::new_from_texture(wsh_texture.clone()));
+
     sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, max.z), dx, dy, mat.clone())));//front
     sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, max.z), dz * (-1.0), dy, mat.clone())));//right
     sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, min.z), dx * (-1.0), dy, mat.clone())));//back
     sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dz, dy, mat.clone())));//left
-    sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), mat.clone())));//top
+    // sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), mat.clone())));//top
+    sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), wsh_surface.clone())));//top with wsh texture
     sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dx, dz, mat.clone())));//bottom
 
-    println!("bbox of box: [{}, {}], [{}, {}], [{}, {}]", sides.bbox.x.tmin, sides.bbox.x.tmax, sides.bbox.y.tmin, sides.bbox.y.tmax, sides.bbox.z.tmin, sides.bbox.z.tmax);
+    // println!("bbox of box: [{}, {}], [{}, {}], [{}, {}]", sides.bbox.x.tmin, sides.bbox.x.tmax, sides.bbox.y.tmin, sides.bbox.y.tmax, sides.bbox.z.tmin, sides.bbox.z.tmax);
 
     sides
 }
