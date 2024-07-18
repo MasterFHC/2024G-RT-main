@@ -2,7 +2,6 @@
 **使用了蒋捷提供的util.rs，我进行了一些修改
 */
 // pub use crate::aabb::BvhNode;
-pub use crate::ray::Ray;
 // pub use crate::sphere::Sphere;
 pub use crate::vec3::Vec3;
 // pub use crate::world::world::Object;

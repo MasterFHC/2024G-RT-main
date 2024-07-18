@@ -82,9 +82,9 @@ impl hittable for Sphere {
         }
         
         let mut root = (h - discriminant.sqrt()) / a;
-        if (!ray_t.surrounds(root)) {
+        if !ray_t.surrounds(root) {
             root = (h + discriminant.sqrt()) / a;
-            if (!ray_t.surrounds(root)) {
+            if !ray_t.surrounds(root) {
                 return false;
             }
         }

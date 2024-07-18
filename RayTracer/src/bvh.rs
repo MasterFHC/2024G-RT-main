@@ -3,7 +3,6 @@ use crate::intervals::Interval;
 use crate::hittables::{hit_record, hittable, hittable_list};
 use crate::aabb::AABB;
 use std::sync::Arc;
-use crate::util;
 
 pub struct BVHNode {
     pub bbox: AABB,

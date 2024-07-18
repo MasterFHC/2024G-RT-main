@@ -1,6 +1,5 @@
 pub use crate::ray::Ray;
 pub use crate::vec3::Vec3;
-use crate::Interval;
 use crate::util;
 use crate::hit_record;
 use std::sync::Arc;

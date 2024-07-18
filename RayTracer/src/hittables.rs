@@ -1,7 +1,7 @@
 pub use crate::ray::Ray;
 pub use crate::vec3::Vec3;
 use crate::Interval;
-use crate::materials::{material, lambertian, metal, isotropic};
+use crate::materials::{material, lambertian, isotropic};
 use std::sync::Arc;
 use crate::aabb::AABB;
 use crate::SolidColor;
@@ -125,7 +125,7 @@ pub struct translate {
 impl translate {
     pub fn new(object: Arc<dyn hittable + Send + Sync>, offset: Vec3) -> Self {
         let other_object = object.clone();
-        let newbbox = (other_object.bbox()).clone() + offset;
+        let newbbox = (other_object.bbox()) + offset;
         Self {
             object,
             offset,

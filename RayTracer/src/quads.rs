@@ -123,11 +123,73 @@ pub fn newbox(a: Vec3, b: Vec3, mat: Arc<dyn material + Send + Sync>) -> hittabl
     sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, max.z), dz * (-1.0), dy, mat.clone())));//right
     sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, min.z), dx * (-1.0), dy, mat.clone())));//back
     sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dz, dy, mat.clone())));//left
-    // sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), mat.clone())));//top
-    sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), wsh_surface.clone())));//top with wsh texture
+    sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), mat.clone())));//top
+    // sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), wsh_surface.clone())));//top with wsh texture
     sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dx, dz, mat.clone())));//bottom
 
     // println!("bbox of box: [{}, {}], [{}, {}], [{}, {}]", sides.bbox.x.tmin, sides.bbox.x.tmax, sides.bbox.y.tmin, sides.bbox.y.tmax, sides.bbox.z.tmin, sides.bbox.z.tmax);
+    
+    //FOR MINECRAFT SCENE
+    /*   
 
+    //chest
+    let chest_top_texture = Arc::new(Image::new("chest_top.png"));
+    let chest_top = Arc::new(lambertian::new_from_texture(chest_top_texture.clone()));
+
+    let chest_side_texture = Arc::new(Image::new("chest_side.png"));
+    let chest_side = Arc::new(lambertian::new_from_texture(chest_side_texture.clone()));
+
+    let chest_front_texture = Arc::new(Image::new("chest_front.png"));
+    let chest_front = Arc::new(lambertian::new_from_texture(chest_front_texture.clone()));
+
+    if(a.x == 5.0 && a.y == 3.0 && a.z == 1.0) {
+        sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, max.z), dx, dy, chest_side.clone())));//front
+        sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, max.z), dz * (-1.0), dy, chest_side.clone())));//right
+        sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, min.z), dx * (-1.0), dy, chest_side.clone())));//back
+        sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dz, dy, chest_front.clone())));//left
+        sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), chest_top.clone())));//top
+        sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dx, dz, chest_top.clone())));//bottom
+        return sides;
+    }
+
+
+    if b.y == 3.0 {
+        sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, max.z), dx, dy, grass_side.clone())));//front
+    }
+    else {
+        sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, max.z), dx, dy, mat.clone())));//front
+    }
+
+    if b.y == 3.0 {
+        sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, max.z), dz * (-1.0), dy, grass_side.clone())));//right
+    }
+    else {
+        sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, max.z), dz * (-1.0), dy, mat.clone())));//right
+    }
+
+    if b.y == 3.0 {
+        sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, min.z), dx * (-1.0), dy, grass_side.clone())));//back
+    }
+    else {
+        sides.add(Arc::new(quad::new(Vec3::new(max.x, min.y, min.z), dx * (-1.0), dy, mat.clone())));//back
+    }
+
+    if b.y == 3.0 {
+        sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dz, dy, grass_side.clone())));//left
+    }
+    else {
+        sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dz, dy, mat.clone())));//left
+    }
+
+    if b.y == 3.0 {
+        sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), grass_top.clone())));//top
+    }
+    else {
+        sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), mat.clone())));//top
+    }
+    // sides.add(Arc::new(quad::new(Vec3::new(min.x, max.y, max.z), dx, dz * (-1.0), wsh_surface.clone())));//top with wsh texture
+    sides.add(Arc::new(quad::new(Vec3::new(min.x, min.y, min.z), dx, dz, mat.clone())));//bottom
+
+     */
     sides
 }

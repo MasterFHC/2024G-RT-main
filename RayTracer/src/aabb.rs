@@ -11,9 +11,9 @@ pub struct AABB {
 
 impl AABB {
     pub fn new(x: Interval, y: Interval, z: Interval) -> Self {
-        let mut xx = x;
-        let mut yy = y;
-        let mut zz = z;
+        let xx = x;
+        let yy = y;
+        let zz = z;
         Self::pad_to_minimums(xx, yy, zz)
     }
     pub fn new_from_points(p0: Vec3, p1: Vec3) -> Self {
@@ -32,15 +32,15 @@ impl AABB {
         } else {
             Interval::new(p1.z, p0.z)
         };
-        let mut xx = x;
-        let mut yy = y;
-        let mut zz = z;
+        let xx = x;
+        let yy = y;
+        let zz = z;
         Self::pad_to_minimums(xx, yy, zz)
     }
     pub fn new_from_boxes(box0: &AABB, box1: &AABB) -> Self {
-        let mut xx = Interval::new_from_interval(&box0.x, &box1.x);
-        let mut yy = Interval::new_from_interval(&box0.y, &box1.y);
-        let mut zz = Interval::new_from_interval(&box0.z, &box1.z);
+        let xx = Interval::new_from_interval(&box0.x, &box1.x);
+        let yy = Interval::new_from_interval(&box0.y, &box1.y);
+        let zz = Interval::new_from_interval(&box0.z, &box1.z);
         Self::pad_to_minimums(xx, yy, zz)
     }
     pub fn axis_interval(&self, n: u8) -> &Interval {
@@ -80,8 +80,8 @@ impl AABB {
             let adinv = 1.0 / ray_direction.lp(i);
             let ax = self.axis_interval(i);
 
-            let mut t0 = (ax.tmin - ray_origin.lp(i)) * adinv;
-            let mut t1 = (ax.tmax - ray_origin.lp(i)) * adinv;
+            let t0 = (ax.tmin - ray_origin.lp(i)) * adinv;
+            let t1 = (ax.tmax - ray_origin.lp(i)) * adinv;
 
             if t0 < t1 {
                 if t0 > ray_t.tmin {

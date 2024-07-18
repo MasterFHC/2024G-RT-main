@@ -1,13 +1,7 @@
 /*
 **使用了蒋捷提供的ray.rs
 */
-use crate::hittables::{hit_record, hittable};
-use crate::materials::{material, lambertian, metal};
 pub use crate::vec3::Vec3;
-use crate::Interval;
-use crate::util;
-use std::sync::Arc;
-use crate::textures::{texture, SolidColor};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ray {

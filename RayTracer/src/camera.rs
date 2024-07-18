@@ -4,11 +4,10 @@ use indicatif::ProgressBar;
 use std::fs::File;
 use crate::vec3::Vec3;
 use crate::ray::Ray;
-use crate::sphere::Sphere;
 use crate::hittables::{hit_record, hittable_list, hittable};
 use crate::intervals::Interval;
 use crate::util;
-use crate::materials::{material, lambertian, metal};
+use crate::materials::{material, lambertian};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{Ordering, AtomicUsize};
 use std::sync::Condvar;
@@ -49,6 +48,10 @@ pub struct Camera {
 
     //background color
     pub background: Vec3,
+
+    //Montcarlo
+    sqrt_spp: u32,
+    recip_sqrt_spp: f64,
 }
 
 impl Camera {
@@ -90,6 +93,10 @@ impl Camera {
 
             //background color
             background,
+
+            //Montcarlo
+            sqrt_spp: 0,
+            recip_sqrt_spp: 0.0,
         }
     }
     fn initialize(&mut self) {
@@ -98,6 +105,10 @@ impl Camera {
         if self.image_height < 1 {
             self.image_height = 1;
         }
+
+        //The Monte Carlo method
+        self.sqrt_spp = (self.samples_per_pixel as f64).sqrt() as u32;
+        self.recip_sqrt_spp = 1.0 / self.sqrt_spp as f64;
 
         // let focal_length = (self.lookfrom - self.lookat).length();
         let theta = self.vfov.to_radians();
@@ -127,8 +138,8 @@ impl Camera {
         self.defocus_disk_u = self.u * defocus_radius;
         self.defocus_disk_v = self.v * defocus_radius;
     }
-    fn get_ray(&self, u: f64, v: f64) -> Ray {
-        let offset = util::random_vec3() * 0.5;
+    fn get_ray(&self, u: f64, v: f64, s_i: u32, s_j: u32) -> Ray {
+        let offset = self.sample_square_stratified(s_i, s_j);
         let pixel_loc = self.pixel00_loc 
                         + self.delta_u * (u + offset.x)  
                         + self.delta_v * (v + offset.y);
@@ -229,27 +240,19 @@ impl Camera {
                         x_min: u32, x_max: u32, y_min: u32, y_max: u32) {
         
         //Render
-        // println!("WIDTH: {}, HEIGHT: {}", self.image_width, self.image_height);
-
-        //we write the colors in the buffer and then transfer them to the image to enhance performance
-        // let write_buffer : [[Vec3; y_max - y_min] ; x_max - x_min];
-        // let mut write_buffer : [[Vec3; 500 as usize] ; 500 as usize] = [[Vec3::zero(); 500 as usize]; 500 as usize];
-        //stack overflow, i will use heap by using opencv's Mat:
         let mut write_buffer : Vec<Vec<Vec3>> = vec![vec![Vec3::zero(); (y_max - y_min) as usize]; (x_max - x_min) as usize];
  
         for j in y_min..y_max {
             for i in x_min..x_max {
                 let mut pixel_color = Vec3::zero();
-
-                for sample in 0..self.samples_per_pixel {
-                    let ray = self.get_ray(i as f64, j as f64);
-                    pixel_color += self.ray_color(&ray, world, self.max_depth);
+                for s_j in 0..self.sqrt_spp {
+                    for s_i in 0..self.sqrt_spp {
+                        let ray = self.get_ray(i as f64, j as f64, s_i as u32, s_j as u32);
+                        pixel_color += self.ray_color(&ray, world, self.max_depth);
+                    }
                 }
-
-                let written_color = pixel_color * (1.0 / self.samples_per_pixel as f64);
+                let written_color = pixel_color * (1.0 / (self.sqrt_spp * self.sqrt_spp) as f64);
                 write_buffer[(i - x_min) as usize][(j - y_min) as usize] = written_color;
-                // println!("Pixel color: {:?}", written_color);
-                // self.bar.inc(1);
             }
         }
         let mut binding = img_mtx.lock().unwrap();
@@ -299,6 +302,14 @@ impl Camera {
         );
         
         color_from_emission + color_from_scatter
+    }
+
+    fn sample_square_stratified(&self, i: u32, j: u32) -> Vec3 {
+        let i = i as f64;
+        let j = j as f64;
+        let u = (i + util::random_f64_0_1()) * self.recip_sqrt_spp - 0.5;
+        let v = (j + util::random_f64_0_1()) * self.recip_sqrt_spp - 0.5;
+        Vec3::new(u, v, 0.0)
     }
 }
 
